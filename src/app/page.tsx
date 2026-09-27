@@ -30,14 +30,15 @@ export default function Home() {
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-16 px-6 py-16 lg:grid-cols-2">
           <div className="text-center lg:text-left">
             <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
-              Your ads,{" "}
+              More customers.{" "}
               <span className="bg-gradient-to-r from-sky-500 to-violet-600 bg-clip-text text-transparent">
-                on autopilot.
+                Zero ad hassle.
               </span>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground lg:mx-0">
-              Run ads on Meta and Google without learning either platform. Tell us
-              about your business and AdPilot does the rest.
+              Ads for small businesses that bring people through your door. Tell us about your
+              business and AdPilot does the rest, from running your Meta and Google ads to moving your
+              budget to what works.
             </p>
             <Link
               href="/setup"

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import QRCode from "qrcode"
 import { z } from "zod"
 
 import { attribute, contactRandom } from "@/lib/conversions/match"
@@ -13,39 +14,22 @@ import {
   listConversions,
   updateQrCode,
 } from "@/lib/conversions/store"
-import { qrThemes, type OrderItem } from "@/lib/conversions/types"
+import { getQrUrl } from "@/lib/conversions/qr-url"
+import { qrCodeSchema, qrFieldErrors, type QrCodeFields } from "@/lib/conversions/qr-schema"
+import type { OrderItem } from "@/lib/conversions/types"
 
 export type FormState = { errors?: Record<string, string> } | undefined
-
-const qrCodeSchema = z.object({
-  businessName: z.string().trim().min(1, "Enter your business name.").max(80),
-  placement: z.string().trim().min(1, "Say where this code goes, like “Front counter”.").max(60),
-  headline: z.string().trim().min(1, "Write the offer customers see.").max(80),
-  percentOff: z.coerce
-    .number({ error: "Enter a discount." })
-    .int("Use a whole number.")
-    .min(5, "Offer at least 5% off.")
-    .max(100, "The discount can't be more than 100%."),
-  offerItem: z.string().trim().min(1, "Say what the discount is for.").max(40),
-  message: z.string().trim().max(160),
-  headerPhoto: z.string().trim().min(1),
-  theme: z.enum(qrThemes.map((t) => t.id) as [string, ...string[]]),
-})
 
 function readQrCodeForm(formData: FormData) {
   return qrCodeSchema.safeParse(Object.fromEntries(formData))
 }
 
-function fieldErrors(error: z.ZodError) {
-  const errors: Record<string, string> = {}
-  for (const issue of error.issues) errors[String(issue.path[0])] ??= issue.message
-  return { errors }
-}
+const fieldErrors = (error: z.ZodError) => ({ errors: qrFieldErrors(error) })
 
 export async function createQrCodeAction(_: FormState, formData: FormData): Promise<FormState> {
   const parsed = readQrCodeForm(formData)
   if (!parsed.success) return fieldErrors(parsed.error)
-  const code = await createQrCode({ ...parsed.data, theme: parsed.data.theme as never })
+  const code = await createQrCode(parsed.data)
   revalidatePath("/conversions")
   redirect(`/conversions/qr/${code.id}`)
 }
@@ -57,9 +41,24 @@ export async function updateQrCodeAction(
 ): Promise<FormState> {
   const parsed = readQrCodeForm(formData)
   if (!parsed.success) return fieldErrors(parsed.error)
-  await updateQrCode(id, { ...parsed.data, theme: parsed.data.theme as never })
+  await updateQrCode(id, parsed.data)
   revalidatePath("/conversions")
   redirect(`/conversions/qr/${id}`)
+}
+
+export type LaunchQrResult =
+  | { ok: true; id: string; url: string; svg: string }
+  | { ok: false; errors: Record<string, string> }
+
+// Creates the QR code picked during campaign setup, and returns it ready to show and scan.
+export async function launchQrCodeAction(fields: QrCodeFields): Promise<LaunchQrResult> {
+  const parsed = qrCodeSchema.safeParse(fields)
+  if (!parsed.success) return { ok: false, ...fieldErrors(parsed.error) }
+  const code = await createQrCode(parsed.data)
+  const { url } = await getQrUrl(code.id)
+  const svg = await QRCode.toString(url, { type: "svg", margin: 1, errorCorrectionLevel: "M" })
+  revalidatePath("/conversions")
+  return { ok: true, id: code.id, url, svg }
 }
 
 export async function setQrCodeActiveAction(id: string, active: boolean) {

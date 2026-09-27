@@ -32,6 +32,7 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { QrCodeFieldset } from "@/components/conversions/qr-code-form"
 import AutoPlan from "@/components/setup/auto-plan"
 import FeedbackLoop from "@/components/setup/feedback-loop"
 import {
@@ -50,7 +51,9 @@ import {
   type CampaignSuggestion,
   type ConversionSource,
   type Platform,
+  type UploadedPhoto,
 } from "@/lib/setup"
+import type { QrCodeFields } from "@/lib/conversions/qr-schema"
 
 const platformVisuals: Record<Platform, { icon: LucideIcon; chip: string; placements: string[] }> =
   {
@@ -97,6 +100,13 @@ type CampaignFormProps = {
   // The owner's picked ads, for previewing them in each placement.
   adImages: string[]
   initial?: CampaignSettings
+  // The QR code set up alongside the campaign when QR codes are a conversion source.
+  qr: {
+    fields: QrCodeFields
+    onChange: (fields: QrCodeFields) => void
+    errors: Record<string, string>
+    photos: UploadedPhoto[]
+  }
   onLaunch: (campaign: CampaignSettings) => void
 }
 
@@ -105,6 +115,7 @@ export default function CampaignForm({
   suggestion,
   adImages,
   initial,
+  qr,
   onLaunch,
 }: CampaignFormProps) {
   // Defaults are the suggestion, so "dirty" means "changed from what AdPilot suggested".
@@ -450,6 +461,33 @@ export default function CampaignForm({
             </FieldSet>
           )}
         />
+
+        {conversionSources.includes("qr") && (
+          <div
+            id="qr-setup"
+            className="flex scroll-mt-24 flex-col gap-5 rounded-2xl border-2 border-dashed border-emerald-300 bg-emerald-50/40 p-5 sm:p-6"
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white">
+                <QrCode className="size-5" />
+              </span>
+              <div>
+                <h3 className="font-semibold">Set up your QR code</h3>
+                <p className="text-sm text-muted-foreground">
+                  It&apos;s created when you launch, ready to print and put by the register.
+                </p>
+              </div>
+            </div>
+            <QrCodeFieldset
+              fields={qr.fields}
+              onChange={qr.onChange}
+              errors={qr.errors}
+              photos={qr.photos}
+              suggestedFor={businessName}
+              compact
+            />
+          </div>
+        )}
       </Section>
 
       <div className="flex flex-wrap items-center gap-3 pt-4">

@@ -42,8 +42,7 @@ export default function QrLanding({ content, items, live }: QrLandingProps) {
   const [pending, startTransition] = useTransition()
   const price = priceOrder(items, content.percentOff)
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  function claim() {
     if (!contact.trim()) {
       setErrors({ email: "Add your email or phone number to get the discount." })
       return
@@ -67,6 +66,7 @@ export default function QrLanding({ content, items, live }: QrLandingProps) {
     })
   }
 
+  const Container = live ? "form" : "div"
   const themeVars = { "--qr": theme.primary, "--qr-soft": theme.soft } as CSSProperties
   const error = errors.email ?? errors.phone ?? errors.form
 
@@ -116,7 +116,19 @@ export default function QrLanding({ content, items, live }: QrLandingProps) {
           )}
         </div>
       ) : (
-        <form onSubmit={onSubmit} className="flex flex-col gap-5 px-5 py-6" noValidate>
+        // Previews sit inside other forms, so only the live page renders a real <form>.
+        <Container
+          {...(live
+            ? {
+                onSubmit: (e: React.FormEvent) => {
+                  e.preventDefault()
+                  claim()
+                },
+                noValidate: true,
+              }
+            : {})}
+          className="flex flex-col gap-5 px-5 py-6"
+        >
           <div className="flex flex-col gap-2">
             <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[var(--qr-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--qr)]">
               <Sparkles className="size-3" />
@@ -197,7 +209,8 @@ export default function QrLanding({ content, items, live }: QrLandingProps) {
           </fieldset>
 
           <button
-            type="submit"
+            type={live ? "submit" : "button"}
+            onClick={live ? undefined : claim}
             disabled={pending}
             className="h-14 rounded-xl bg-[var(--qr)] text-lg font-semibold text-white shadow-md transition hover:brightness-110 disabled:opacity-60"
           >
@@ -206,7 +219,7 @@ export default function QrLanding({ content, items, live }: QrLandingProps) {
           <p className="text-center text-xs text-neutral-500">
             We&apos;ll send your receipt and the occasional offer. Unsubscribe anytime.
           </p>
-        </form>
+        </Container>
       )}
 
       <p className="mt-auto pb-5 text-center text-xs text-neutral-400">Powered by AdPilot</p>

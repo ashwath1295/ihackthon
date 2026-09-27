@@ -2,17 +2,9 @@
 // these the first time it runs; replace the store with a database later.
 import { attribute } from "@/lib/conversions/match"
 import { priceOrder, ringUp, seededRandom } from "@/lib/conversions/menu"
+import { DEFAULT_OFFER } from "@/lib/conversions/qr-schema"
 import type { Conversion, QrCode } from "@/lib/conversions/types"
 import { CAMPAIGN_PERIOD, demoCampaign } from "@/lib/demo-campaign"
-
-export const DEFAULT_OFFER = {
-  headline: "20% off your first coffee",
-  percentOff: 20,
-  offerItem: "coffee",
-  message: "Add your email or phone number and we'll take it off today's order.",
-  headerPhoto: "/demo/golden-goat/photo-2.webp",
-  theme: "gold",
-} as const
 
 const qr = (id: string, placement: string, createdAt: string): QrCode => ({
   id,

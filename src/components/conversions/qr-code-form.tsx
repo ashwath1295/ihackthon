@@ -6,25 +6,14 @@ import { Check, Eye, Lock, Mail, Receipt, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { FormState } from "@/lib/conversions/actions"
 import { sampleOrder } from "@/lib/conversions/menu"
-import { qrThemes, type QrCode } from "@/lib/conversions/types"
+import type { QrCodeFields } from "@/lib/conversions/qr-schema"
+import { qrThemes } from "@/lib/conversions/types"
 import type { UploadedPhoto } from "@/lib/setup"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import QrLanding from "@/components/conversions/qr-landing"
 import { inputClass, primaryButtonClass } from "@/components/setup/styles"
-
-export type QrCodeFields = Pick<
-  QrCode,
-  | "businessName"
-  | "placement"
-  | "headline"
-  | "percentOff"
-  | "offerItem"
-  | "message"
-  | "headerPhoto"
-  | "theme"
->
 
 type QrCodeFormProps = {
   action: (state: FormState, formData: FormData) => Promise<FormState>
@@ -53,24 +42,43 @@ function Hint({ error, children }: { error?: string; children?: React.ReactNode 
   )
 }
 
-export default function QrCodeForm({
-  action,
-  defaults,
+type QrCodeFieldsetProps = {
+  fields: QrCodeFields
+  onChange: (fields: QrCodeFields) => void
+  errors: Record<string, string>
+  // The business's photos, to pick a header from.
+  photos: UploadedPhoto[]
+  // Shown above the fields when they were filled in automatically.
+  suggestedFor?: string
+  // A narrower layout with a smaller preview, for use inside another form.
+  compact?: boolean
+}
+
+// The QR code's fields beside a live phone preview of what customers see. Inputs are named so
+// they also submit with a plain form.
+export function QrCodeFieldset({
+  fields,
+  onChange,
+  errors,
   photos,
-  submitLabel,
   suggestedFor,
-}: QrCodeFormProps) {
-  const [state, formAction, pending] = useActionState(action, undefined)
-  const errors = state?.errors ?? {}
-  const [fields, setFields] = useState(defaults)
+  compact,
+}: QrCodeFieldsetProps) {
   const set =
     <K extends keyof QrCodeFields>(key: K) =>
     (value: QrCodeFields[K]) =>
-      setFields((f) => ({ ...f, [key]: value }))
+      onChange({ ...fields, [key]: value })
 
   return (
-    <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
-      <form action={formAction} className="flex flex-col gap-7" noValidate>
+    <div
+      className={cn(
+        "grid items-start gap-10",
+        compact
+          ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,280px)] xl:gap-8"
+          : "lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]",
+      )}
+    >
+      <div className="flex flex-col gap-7">
         {suggestedFor && (
           <p className="flex items-start gap-2 rounded-2xl bg-secondary px-4 py-3 text-sm text-secondary-foreground">
             <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -78,7 +86,7 @@ export default function QrCodeForm({
           </p>
         )}
 
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className={cn("grid gap-6", !compact && "sm:grid-cols-2")}>
           <div className="flex flex-col gap-2">
             <Label htmlFor="businessName">Business name</Label>
             <Input
@@ -263,21 +271,18 @@ export default function QrCodeForm({
             ))}
           </ul>
         </div>
+      </div>
 
-        <div className="pt-2">
-          <Button type="submit" size="lg" disabled={pending} className={primaryButtonClass}>
-            {pending ? "Saving…" : submitLabel}
-          </Button>
-        </div>
-      </form>
-
-      <aside className="flex flex-col items-center gap-3 lg:sticky lg:top-24">
+      <aside className={cn("flex flex-col items-center gap-3", !compact && "lg:sticky lg:top-24")}>
         <p className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
           <Eye className="size-4" />
           What customers see when they scan
         </p>
         {/* Phone frame */}
-        <div className="w-full max-w-[340px] rounded-[2.75rem] bg-slate-900 p-3 shadow-2xl shadow-slate-900/25">
+        <div
+          className="w-full max-w-[340px] rounded-[2.75rem] bg-slate-900 p-3 shadow-2xl shadow-slate-900/25"
+          style={compact ? { zoom: 0.8 } : undefined}
+        >
           <div className="relative h-[640px] overflow-hidden rounded-[2.1rem] bg-white">
             <div className="absolute top-2 left-1/2 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-slate-900" />
             <div className="h-full overflow-y-auto">
@@ -290,5 +295,33 @@ export default function QrCodeForm({
         </p>
       </aside>
     </div>
+  )
+}
+
+export default function QrCodeForm({
+  action,
+  defaults,
+  photos,
+  submitLabel,
+  suggestedFor,
+}: QrCodeFormProps) {
+  const [state, formAction, pending] = useActionState(action, undefined)
+  const [fields, setFields] = useState(defaults)
+
+  return (
+    <form action={formAction} className="flex flex-col gap-8" noValidate>
+      <QrCodeFieldset
+        fields={fields}
+        onChange={setFields}
+        errors={state?.errors ?? {}}
+        photos={photos}
+        suggestedFor={suggestedFor}
+      />
+      <div>
+        <Button type="submit" size="lg" disabled={pending} className={primaryButtonClass}>
+          {pending ? "Saving…" : submitLabel}
+        </Button>
+      </div>
+    </form>
   )
 }

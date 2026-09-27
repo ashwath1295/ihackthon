@@ -1,8 +1,10 @@
 # AdPilot
 
-**Your ads, on autopilot.**
+**More customers. Zero ad hassle.**
 
 AdPilot helps small business owners run ads on Meta and Google without learning either platform.
+
+**[Watch the demo video](https://youtu.be/ZaBx4PjeQfo)**
 
 ## How it works
 

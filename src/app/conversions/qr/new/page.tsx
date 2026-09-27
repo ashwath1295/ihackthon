@@ -4,7 +4,7 @@ import Link from "next/link"
 import AppHeader from "@/components/app-header"
 import QrCodeForm from "@/components/conversions/qr-code-form"
 import { createQrCodeAction } from "@/lib/conversions/actions"
-import { DEFAULT_OFFER } from "@/lib/conversions/mock-data"
+import { DEFAULT_OFFER } from "@/lib/conversions/qr-schema"
 import { demoBusiness, demoPhotos } from "@/lib/demo"
 
 export const metadata: Metadata = { title: "Create QR code · AdPilot" }
