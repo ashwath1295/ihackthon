@@ -132,7 +132,7 @@ export default function CampaignStep() {
               Create your QR code
             </Link>
           )}
-          <Link href="/" className={cn(buttonVariants({ size: "lg" }), primaryButtonClass)}>
+          <Link href="/dashboard" className={cn(buttonVariants({ size: "lg" }), primaryButtonClass)}>
             Go to your dashboard
             <ArrowRight className="size-4" />
           </Link>

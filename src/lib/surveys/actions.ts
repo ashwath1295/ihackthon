@@ -112,6 +112,6 @@ export async function submitResponseAction(
   // Opted-in contacts go straight into the CRM (matched by email or phone).
   await linkSurveyResponse(response)
   revalidatePath("/surveys")
-  revalidatePath("/")
+  revalidatePath("/dashboard")
   return { ok: true }
 }

@@ -65,7 +65,7 @@ export default function SurveyInsights({ responses, surveys, customers, from, to
         <div className={card}>
           <div className="flex items-baseline justify-between gap-2">
             <h3 className="font-semibold">How did you hear about us?</h3>
-            <Link href="/#survey-vs-ads" className="text-sm text-primary underline underline-offset-4">Compare with ad data</Link>
+            <Link href="/dashboard#survey-vs-ads" className="text-sm text-primary underline underline-offset-4">Compare with ad data</Link>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{formatNumber(answeredSource)} answers</p>
           <div className="mt-5">
@@ -126,7 +126,7 @@ export default function SurveyInsights({ responses, surveys, customers, from, to
         <div className={card}>
           <div className="flex items-baseline justify-between gap-2">
             <h3 className="font-semibold">Newest opted-in contacts</h3>
-            <Link href="/#customers" className="text-sm text-primary underline underline-offset-4">Open in CRM</Link>
+            <Link href="/dashboard#customers" className="text-sm text-primary underline underline-offset-4">Open in CRM</Link>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">Linked to the CRM automatically, with what they&apos;ve spent since.</p>
           <ul className="mt-3 divide-y text-sm">
