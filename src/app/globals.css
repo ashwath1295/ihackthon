@@ -5,6 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-channel-youtube: var(--channel-youtube);
+  --color-channel-facebook: var(--channel-facebook);
+  --color-channel-instagram: var(--channel-instagram);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -49,6 +52,10 @@
 }
 
 :root {
+  /* Dashboard channel colors (validated categorical slots) */
+  --channel-facebook: #2a78d6;
+  --channel-youtube: #eb6834;
+  --channel-instagram: #1baf7a;
   --background: oklch(0.985 0.012 85);
   --foreground: oklch(0.2 0.04 280);
   --card: oklch(1 0 0);
@@ -84,6 +91,9 @@
 }
 
 .dark {
+  --channel-facebook: #3987e5;
+  --channel-youtube: #d95926;
+  --channel-instagram: #199e70;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

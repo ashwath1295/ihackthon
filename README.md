@@ -28,4 +28,4 @@ Use this account on the login page (`/login`):
 | --- | --- |
 | `demo@adpilot.com` | `demo1234` |
 
-Logging in takes you to campaign setup (`/setup`). This is a demo-only account checked in the browser (see `src/lib/demo-account.ts`); there's no real authentication yet.
+Logging in takes you to the campaign dashboard (`/`). This is a demo-only account checked in the browser (see `src/lib/demo-account.ts`); there's no real authentication yet.

@@ -35,7 +35,7 @@ export default function LoginForm() {
     const ok =
       email.trim().toLowerCase() === DEMO_ACCOUNT.email && password === DEMO_ACCOUNT.password
     if (ok) {
-      router.push("/setup")
+      router.push("/")
     } else {
       setFailed(true)
     }
