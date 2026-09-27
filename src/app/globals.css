@@ -138,3 +138,10 @@
     @apply font-sans;
   }
 }
+/* QR survey posters print on one US Letter page */
+@media print {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+}

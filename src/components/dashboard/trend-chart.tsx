@@ -4,18 +4,19 @@ import { useState } from "react"
 
 import { formatDate, formatNumber } from "@/components/dashboard/format"
 
-type Point = { date: string; visitors: number }
+type Point = { date: string; value: number }
 
 const W = 600
 const H = 160
 
 // Round the axis max up to a clean number (e.g. 237 -> 250).
 function niceMax(n: number) {
+  if (n <= 1) return 1
   const step = 10 ** Math.floor(Math.log10(n)) / 2
   return Math.ceil(n / step) * step
 }
 
-export default function VisitorsChart({
+export default function TrendChart({
   data,
   color,
   label,
@@ -25,10 +26,11 @@ export default function VisitorsChart({
   label: string
 }) {
   const [active, setActive] = useState<number | null>(null)
-  const max = niceMax(Math.max(...data.map((d) => d.visitors)))
-  const x = (i: number) => (i / (data.length - 1)) * W
+  const max = niceMax(Math.max(...data.map((d) => d.value)))
+  const span = Math.max(data.length - 1, 1)
+  const x = (i: number) => (i / span) * W
   const y = (v: number) => H - (v / max) * H
-  const line = data.map((d, i) => `${i ? "L" : "M"}${x(i)} ${y(d.visitors)}`).join(" ")
+  const line = data.map((d, i) => `${i ? "L" : "M"}${x(i)} ${y(d.value)}`).join(" ")
   const area = `${line} L${W} ${H} L0 ${H} Z`
   const last = data.length - 1
   const shown = active ?? last
@@ -45,7 +47,7 @@ export default function VisitorsChart({
       <figcaption className="flex items-baseline justify-between text-sm">
         <span className="font-medium">{label}</span>
         <span className="text-muted-foreground tabular-nums">
-          {formatDate(point.date)}: <span className="font-medium text-foreground">{formatNumber(point.visitors)}</span>
+          {formatDate(point.date)}: <span className="font-medium text-foreground">{formatNumber(point.value)}</span>
         </span>
       </figcaption>
       <div className="flex gap-2">
@@ -76,7 +78,7 @@ export default function VisitorsChart({
           {/* Marker as HTML so it stays round in a stretched SVG */}
           <span
             className="pointer-events-none absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card"
-            style={{ left: `${(shown / last) * 100}%`, top: `${(y(point.visitors) / H) * 100}%`, background: color }}
+            style={{ left: `${(shown / span) * 100}%`, top: `${(y(point.value) / H) * 100}%`, background: color }}
           />
         </div>
       </div>

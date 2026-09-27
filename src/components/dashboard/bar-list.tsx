@@ -14,7 +14,7 @@ export type BarItem = {
 }
 
 // Horizontal bars with the value at the tip and a hover/tap tooltip.
-export default function BarList({ items, max }: { items: BarItem[]; max?: number }) {
+export default function BarList({ items, max, labelWidth = "6.5rem" }: { items: BarItem[]; max?: number; labelWidth?: string }) {
   const [active, setActive] = useState<string | null>(null)
   const top = max ?? Math.max(...items.map((i) => i.value))
 
@@ -26,7 +26,8 @@ export default function BarList({ items, max }: { items: BarItem[]; max?: number
         return (
           <li
             key={item.key}
-            className="relative grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 text-sm"
+            className="relative grid items-center gap-3 text-sm"
+            style={{ gridTemplateColumns: `${labelWidth} minmax(0,1fr)` }}
             onPointerEnter={() => setActive(item.key)}
             onPointerLeave={() => setActive(null)}
             onClick={() => setActive(isActive ? null : item.key)}
@@ -43,7 +44,7 @@ export default function BarList({ items, max }: { items: BarItem[]; max?: number
             {isActive && item.details && (
               <div
                 role="tooltip"
-                className="pointer-events-none absolute bottom-full left-28 z-10 mb-1 rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg"
+                className="pointer-events-none absolute bottom-full left-8 z-10 mb-1 rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg"
               >
                 <p className="font-medium">{item.label}</p>
                 {item.details.map((d) => (

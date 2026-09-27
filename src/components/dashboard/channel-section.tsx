@@ -14,7 +14,7 @@ import {
   formatPercent,
   formatUsd,
 } from "@/components/dashboard/format"
-import VisitorsChart from "@/components/dashboard/visitors-chart"
+import TrendChart from "@/components/dashboard/trend-chart"
 
 export default function ChannelSection({ channel }: { channel: Channel }) {
   const t = channelTotals(channel)
@@ -49,7 +49,7 @@ export default function ChannelSection({ channel }: { channel: Channel }) {
             </div>
           ))}
         </dl>
-        <VisitorsChart data={channel.dailyVisitors} color={channelStroke[channel.id]} label="Visitors per day" />
+        <TrendChart data={channel.dailyVisitors.map((d) => ({ date: d.date, value: d.visitors }))} color={channelStroke[channel.id]} label="Visitors per day" />
       </div>
 
       <div className="mt-6 overflow-x-auto">
