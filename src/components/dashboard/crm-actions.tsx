@@ -17,7 +17,7 @@ export default function CrmActions({ actions }: { actions: CrmAction[] }) {
   return (
     <section aria-labelledby="actions-title" className="flex flex-col gap-4">
       <div>
-        <h2 id="actions-title" className="text-xl font-semibold tracking-tight">Recommended CRM actions</h2>
+        <h2 id="actions-title" className="text-xl font-semibold tracking-tight">Recommended next steps</h2>
         <p className="text-sm text-muted-foreground">What to do next, based on this period&apos;s numbers.</p>
       </div>
       <ul className="grid gap-4 md:grid-cols-2">
@@ -37,7 +37,7 @@ export default function CrmActions({ actions }: { actions: CrmAction[] }) {
               <p className="font-semibold leading-snug">{a.action}</p>
               <dl className="grid gap-2 text-sm">
                 <div>
-                  <dt className="text-xs text-muted-foreground">Target segment</dt>
+                  <dt className="text-xs text-muted-foreground">Who</dt>
                   <dd>{a.segment}</dd>
                 </div>
                 <div>

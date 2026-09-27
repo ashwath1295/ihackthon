@@ -6,6 +6,10 @@ export const formatCompact = (n: number) =>
 export const formatUsd = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n)
 
+// Order amounts, to the cent.
+export const formatPrice = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n)
+
 export const formatPercent = (n: number, digits = 1) => `${(n * 100).toFixed(digits)}%`
 
 export function formatDate(iso: string) {

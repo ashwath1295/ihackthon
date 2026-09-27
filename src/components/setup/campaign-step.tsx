@@ -129,7 +129,7 @@ export default function CampaignStep() {
         <div className="flex flex-wrap justify-center gap-3">
           {campaign.conversionSources.includes("qr") && (
             <Link
-              href="/surveys/new"
+              href="/conversions/qr/new"
               className={cn(
                 buttonVariants({ variant: "outline", size: "lg" }),
                 "h-12 rounded-xl px-5",

@@ -2,37 +2,46 @@ import type { Metadata, Viewport } from "next"
 import { notFound } from "next/navigation"
 import { connection } from "next/server"
 
-import { getSurvey } from "@/lib/surveys/store"
-import CustomerSurveyForm from "@/components/surveys/customer-survey-form"
+import QrLanding from "@/components/conversions/qr-landing"
+import { currentOrder, currentOrderSeed } from "@/lib/conversions/menu"
+import { getQrCode } from "@/lib/conversions/store"
 
 export async function generateMetadata({ params }: PageProps<"/s/[id]">): Promise<Metadata> {
-  const survey = await getSurvey((await params).id)
-  return { title: survey ? `${survey.name} · Quick survey` : "Survey", robots: { index: false } }
+  const code = await getQrCode((await params).id)
+  return {
+    title: code ? `${code.headline} · ${code.businessName}` : "Offer",
+    robots: { index: false },
+  }
 }
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1 }
 
-export default async function CustomerSurveyPage({ params }: PageProps<"/s/[id]">) {
+// The page a customer's phone opens after scanning a QR code in the store.
+export default async function QrOfferPage({ params }: PageProps<"/s/[id]">) {
   await connection()
-  const survey = await getSurvey((await params).id)
-  if (!survey) notFound()
+  const code = await getQrCode((await params).id)
+  if (!code) notFound()
 
+  if (!code.active) {
+    return (
+      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-5 py-16 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">This offer has ended</h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          Thanks for stopping by {code.businessName}!
+        </p>
+      </main>
+    )
+  }
+
+  // What's being rung up at the register right now.
+  const orderSeed = currentOrderSeed()
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-5 pt-8 pb-12">
-      <header className="mb-8">
-        <p className="text-base font-medium text-primary">{survey.name}</p>
-      </header>
-
-      {survey.active ? (
-        <CustomerSurveyForm surveyId={survey.id} storeName={survey.name} questions={survey.questions} />
-      ) : (
-        <div className="py-12 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">This survey is closed</h1>
-          <p className="mt-3 text-lg text-muted-foreground">Thanks for stopping by {survey.name}!</p>
-        </div>
-      )}
-
-      <p className="mt-auto pt-12 text-center text-sm text-muted-foreground">Powered by AdPilot</p>
+    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col bg-white">
+      <QrLanding
+        content={code}
+        items={currentOrder(orderSeed)}
+        live={{ qrCodeId: code.id, orderSeed }}
+      />
     </main>
   )
 }

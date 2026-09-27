@@ -7,10 +7,10 @@ import { buttonVariants } from "@/components/ui/button"
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/surveys", label: "QR surveys" },
+  { href: "/conversions", label: "Conversion feed" },
 ]
 
-export default function AppHeader({ current }: { current: "/dashboard" | "/surveys" }) {
+export default function AppHeader({ current }: { current: "/dashboard" | "/conversions" }) {
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/80 backdrop-blur-md print:hidden">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">

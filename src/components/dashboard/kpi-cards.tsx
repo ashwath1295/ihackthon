@@ -1,12 +1,30 @@
-import { conversionRate, type Totals } from "@/lib/dashboard-data"
+import { costPerConversion, returnOnAdSpend, type DashboardData } from "@/lib/dashboard-data"
+import { demoCampaign } from "@/lib/demo-campaign"
 import { formatNumber, formatPercent, formatUsd } from "@/components/dashboard/format"
 
-export default function KpiCards({ totals }: { totals: Totals }) {
+export default function KpiCards({ data }: { data: DashboardData }) {
+  const { totals, summary } = data
   const kpis = [
-    { label: "Total spend", value: formatUsd(totals.spend), note: "across 3 channels" },
-    { label: "Total clicks", value: formatNumber(totals.clicks), note: `${formatNumber(totals.impressions)} impressions` },
-    { label: "Total conversions", value: formatNumber(totals.conversions), note: "new paying customers" },
-    { label: "Conversion rate", value: formatPercent(conversionRate(totals)), note: `of ${formatNumber(totals.visitors)} visitors` },
+    {
+      label: "Spend",
+      value: formatUsd(data.spent),
+      note: `of your ${formatUsd(demoCampaign.monthlyBudget)} monthly budget`,
+    },
+    {
+      label: "Conversions from ads",
+      value: formatNumber(totals.conversions),
+      note: `${formatPercent(summary.matchedShare, 0)} of ${formatNumber(summary.count)} in-store QR conversions`,
+    },
+    {
+      label: "Revenue from ads",
+      value: formatUsd(totals.revenue),
+      note: `${formatUsd(costPerConversion(totals))} per conversion`,
+    },
+    {
+      label: "Return on ad spend",
+      value: `${returnOnAdSpend(totals).toFixed(1)}×`,
+      note: "revenue ÷ spend",
+    },
   ]
 
   return (

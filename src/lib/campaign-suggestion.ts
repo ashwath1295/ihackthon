@@ -1,4 +1,5 @@
 import { isDemoBusiness } from "@/lib/demo"
+import { placement } from "@/lib/placements"
 import type {
   BusinessDetails,
   BusinessProfile,
@@ -32,47 +33,27 @@ function basedOn(profile: BusinessProfile, adCount: number): CampaignSuggestion[
 
 const demoChannels: Record<Platform, Channel[]> = {
   meta: [
+    { ...placement("ig-reels"), share: 40, detail: "Your 9:16 ads play full screen as locals scroll." },
     {
-      name: "Instagram Reels",
-      format: "vertical",
-      formatLabel: "Vertical video · 9:16",
-      share: 40,
-      detail: "Your 9:16 ads play full screen as locals scroll.",
-    },
-    {
-      name: "Instagram Stories",
-      format: "vertical",
-      formatLabel: "Full-screen story · 9:16",
+      ...placement("ig-stories"),
       share: 35,
       detail: "Morning check-ins, right before the coffee run.",
     },
-    {
-      name: "Facebook Feed",
-      format: "feed",
-      formatLabel: "Feed post · 4:5",
-      share: 25,
-      detail: "Reaches office workers on their lunch break.",
-    },
+    { ...placement("fb-feed"), share: 25, detail: "Reaches office workers on their lunch break." },
   ],
   google: [
     {
-      name: "Search",
-      format: "search",
-      formatLabel: "Text ad",
+      ...placement("google-search"),
       share: 50,
       detail: "Shows up for “coffee near me” and “latte SoMa”.",
     },
     {
-      name: "Maps",
-      format: "map",
-      formatLabel: "Promoted pin",
+      ...placement("google-maps"),
       share: 30,
       detail: "Puts your pin first for people nearby looking for coffee.",
     },
     {
-      name: "YouTube Shorts",
-      format: "vertical",
-      formatLabel: "Vertical video · 9:16",
+      ...placement("yt-shorts"),
       share: 20,
       detail: "Reuses your 9:16 ads for commuters watching Shorts.",
     },

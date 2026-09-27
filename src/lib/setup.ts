@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import type { PlacementId } from "@/lib/placements"
+
 export const businessCategories = [
   { value: "restaurant", label: "Restaurant or café", cta: "Order now" },
   { value: "retail", label: "Retail shop", cta: "Shop now" },
@@ -214,6 +216,7 @@ export type ChannelFormat = "vertical" | "feed" | "search" | "map"
 
 // A placement AdPilot picks within a platform, e.g. Instagram Reels.
 export type Channel = {
+  id: PlacementId
   name: string
   format: ChannelFormat
   formatLabel: string

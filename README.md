@@ -30,10 +30,12 @@ Use this account on the login page (`/login`):
 
 Logging in takes you to the campaign dashboard (`/dashboard`). The home page (`/`) is the landing page with **Get started** and **Log in**. This is a demo-only account checked in the browser (see `src/lib/demo-account.ts`); there's no real authentication yet.
 
-## QR surveys
+## Conversion feed and QR codes
 
-Owners create a QR survey at `/surveys` (or **Create QR survey** on the dashboard), print the poster, and put it up in the shop. Customers scan it and answer a short form at `/s/<survey-id>`. Results show up under **Survey insights** on `/surveys`, and on the dashboard in "What customers say vs. what the ads show" and the Customers / CRM section.
+QR codes are an in-store conversion source. Owners create one at `/conversions/qr/new` (filled in from the business profile, with a live preview of what customers see), print the poster, and put it at the counter. Customers scan it, see the order just rung up at the register, and add their email or phone number to get the offer (20% off their first coffee) at `/s/<code-id>`.
+
+Each conversion is matched to the ad the customer saw (by email, phone number, or cookie) and sent back to Meta and Google. The **Conversion feed** (`/conversions`) shows every conversion with the platform, placement, and ad that drove it. The **dashboard** (`/dashboard`) shows the campaign launched in setup, with conversions and revenue counted from the feed.
 
 - **Testing with a phone:** in local development the QR code uses this computer's Wi-Fi address instead of `localhost`, so a phone on the same Wi-Fi can open it. Once deployed, set `SITE_URL` (e.g. `SITE_URL=https://adpilot.example.com`).
-- **Data:** surveys and responses are saved to `.data/surveys.json` (not committed), seeded from mock data in `src/lib/surveys/mock-data.ts`. Delete the file to reset the demo. To use a real database, replace the functions in `src/lib/surveys/store.ts`.
-- **CRM:** survey contacts who opt in are added to the CRM automatically (matched by email or phone) in `.data/crm.json`, seeded with mock purchases from `src/lib/crm/mock-data.ts`. The QR surveys page shows what each contact has spent and which channels bring paying customers. To connect a real CRM, replace `src/lib/crm/store.ts`.
+- **Data:** QR codes and conversions are saved to `.data/conversions.json` (not committed), seeded from mock data in `src/lib/conversions/mock-data.ts`. Delete the file to reset the demo. To use a real database, replace the functions in `src/lib/conversions/store.ts`.
+- **Mocked for now:** the register lookup (`src/lib/conversions/menu.ts`), matching customers to ads (`src/lib/conversions/match.ts`), and ad delivery numbers on the dashboard (`src/lib/dashboard-data.ts`).
