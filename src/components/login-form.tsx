@@ -28,7 +28,8 @@ export default function LoginForm() {
 
   const form = useForm<LoginDetails>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    // Pre-filled with the demo account so demos are one click.
+    defaultValues: { ...DEMO_ACCOUNT },
   })
 
   function onSubmit({ email, password }: LoginDetails) {
