@@ -1,9 +1,5 @@
-import {
-  emptyProfile,
-  websiteHost,
-  type BusinessDetails,
-  type ProfileSuggestion,
-} from "@/lib/setup"
+import { isDemoBusiness } from "@/lib/demo"
+import { emptyProfile, type BusinessDetails, type ProfileSuggestion } from "@/lib/setup"
 
 // Stand-in for the AI step that will read the business's website and listings.
 // Returns hand-written research for the demo business, and a blank starter for anything else.
@@ -31,7 +27,7 @@ const goldenGoatCoffee: ProfileSuggestion = {
 }
 
 export function mockProfileSuggestion(business: BusinessDetails): ProfileSuggestion {
-  return websiteHost(business.website) === "goldengoatcoffee.com"
+  return isDemoBusiness(business)
     ? structuredClone(goldenGoatCoffee)
     : { sources: [], profile: emptyProfile() }
 }

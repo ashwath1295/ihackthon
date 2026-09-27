@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   ArrowLeft,
   ArrowRight,
-  CircleCheck,
   Coffee,
   MapPin,
   Pencil,
@@ -119,7 +119,7 @@ type ProfileFormProps = {
 }
 
 export default function ProfileForm({ suggestion, initial }: ProfileFormProps) {
-  const [saved, setSaved] = useState(false)
+  const router = useRouter()
   const suggested = suggestion.sources.length > 0
 
   // Defaults are the suggestion, so "dirty" means "changed from what AdPilot suggested".
@@ -144,16 +144,11 @@ export default function ProfileForm({ suggestion, initial }: ProfileFormProps) {
 
   function onSubmit(profile: BusinessProfile) {
     saveDraft({ profile })
-    setSaved(true)
+    router.push("/setup/creatives")
   }
 
   return (
-    <form
-      onSubmit={form.handleSubmit(onSubmit)}
-      onChange={() => setSaved(false)}
-      className="flex flex-col gap-6"
-      noValidate
-    >
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6" noValidate>
       <Section
         icon={MapPin}
         iconClassName="bg-sky-100 text-sky-600"
@@ -495,7 +490,6 @@ export default function ProfileForm({ suggestion, initial }: ProfileFormProps) {
             size="lg"
             onClick={() => {
               form.reset(suggestion.profile)
-              setSaved(false)
             }}
             className="h-12 rounded-xl px-4 text-muted-foreground"
           >
@@ -503,18 +497,10 @@ export default function ProfileForm({ suggestion, initial }: ProfileFormProps) {
             Reset to suggestions
           </Button>
         )}
-        <div className="ml-auto flex items-center gap-4">
-          {saved && (
-            <p role="status" className="flex items-center gap-2 text-sm text-emerald-700">
-              <CircleCheck className="size-4" />
-              Saved. Launch is next.
-            </p>
-          )}
-          <Button type="submit" size="lg" className={primaryButtonClass}>
-            Continue
-            <ArrowRight className="size-4" />
-          </Button>
-        </div>
+        <Button type="submit" size="lg" className={cn(primaryButtonClass, "ml-auto")}>
+          Continue
+          <ArrowRight className="size-4" />
+        </Button>
       </div>
     </form>
   )

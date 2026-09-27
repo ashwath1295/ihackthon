@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { categoryVisuals } from "@/components/setup/category-visuals"
 import { inputClass, primaryButtonClass } from "@/components/setup/styles"
+import { demoBusiness } from "@/lib/demo"
 import {
   businessCategories,
   businessSchema,
@@ -36,12 +37,7 @@ export default function BusinessForm() {
 
   const form = useForm<BusinessDetails>({
     resolver: zodResolver(businessSchema),
-    defaultValues: {
-      businessName: "",
-      category: undefined,
-      website: "",
-      description: "",
-    },
+    defaultValues: demoBusiness,
   })
 
   // Restore earlier answers so owners can come back to the form.
@@ -162,7 +158,8 @@ export default function BusinessForm() {
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor="description" className="text-base">
-                Describe your business
+                Describe your business{" "}
+                <span className="font-normal text-muted-foreground">(optional)</span>
               </FieldLabel>
               <Textarea
                 {...field}

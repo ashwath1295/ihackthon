@@ -6,7 +6,7 @@ import { Sparkles, TriangleAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import ProfileForm from "@/components/setup/profile-form"
-import ProfileLoading, { LOADING_STEP_MS, loadingSteps } from "@/components/setup/profile-loading"
+import StepLoading, { LOADING_STEP_MS } from "@/components/setup/step-loading"
 import SetupProgress from "@/components/setup/setup-progress"
 import {
   businessKey,
@@ -37,6 +37,17 @@ async function fetchSuggestion(business: BusinessDetails, signal: AbortSignal) {
   return (await response.json()) as ProfileSuggestion
 }
 
+function loadingSteps(host: string) {
+  return [
+    host ? `Reading ${host}` : "Reading your description",
+    "Pinpointing your location",
+    "Picking out your brand keywords",
+    "Spotting your best sellers",
+    "Finding your customers",
+    "Suggesting a budget",
+  ]
+}
+
 // Waits for the suggestion, but no less than the loading animation takes to play through.
 async function suggestProfile(business: BusinessDetails, signal: AbortSignal) {
   const minimumWait = loadingSteps(websiteHost(business.website)).length * LOADING_STEP_MS
@@ -55,7 +66,7 @@ function initialState(draft: SetupDraft): State {
   return { status: "loading" }
 }
 
-// Rendered in the browser only (see the page), since the draft lives in localStorage.
+// Rendered in the browser only (see the page), since the draft lives in browser memory.
 export default function ProfileStep() {
   const router = useRouter()
   const [draft] = useState(loadDraft)
@@ -88,7 +99,9 @@ export default function ProfileStep() {
   const host = websiteHost(business.website)
 
   if (state.status === "loading") {
-    return <ProfileLoading businessName={business.businessName} host={host} />
+    return (
+      <StepLoading title={`Getting to know ${business.businessName}`} steps={loadingSteps(host)} />
+    )
   }
 
   if (state.status === "error") {

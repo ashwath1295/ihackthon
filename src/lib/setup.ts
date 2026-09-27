@@ -30,7 +30,7 @@ function isWebsite(value: string) {
   return websiteHost(value).includes(".")
 }
 
-export const setupSteps = ["Your business", "Business profile", "Launch"] as const
+export const setupSteps = ["Your business", "Business profile", "Creatives", "Launch"] as const
 
 export const businessSchema = z.object({
   businessName: z
@@ -43,11 +43,7 @@ export const businessSchema = z.object({
     .string()
     .trim()
     .refine((v) => v === "" || isWebsite(v), "Enter a website like joesbakery.com."),
-  description: z
-    .string()
-    .trim()
-    .min(20, "Tell us a bit more — at least 20 characters.")
-    .max(500, "Keep it under 500 characters."),
+  description: z.string().trim().max(500, "Keep it under 500 characters."),
 })
 
 export type BusinessDetails = z.infer<typeof businessSchema>
@@ -120,8 +116,38 @@ export type ProfileSuggestion = {
   sources: string[]
 }
 
-// Setup answers are kept in the browser until there's a backend to save them to.
-const DRAFT_KEY = "adpilot:setup-draft"
+// Setup answers are kept in memory, so they carry across steps but a page refresh starts over.
+// (Handy for demos: the step 2 loading screen plays every time.)
+export const MAX_PHOTOS = 10
+export const MAX_PHOTO_BYTES = 20 * 1024 * 1024
+// The platforms need at least two ads to A/B test.
+export const MIN_CREATIVE_PICKS = 2
+
+export type UploadedPhoto = {
+  id: string
+  name: string
+  // An object URL for the file, valid until the page is refreshed.
+  url: string
+}
+
+export const creativeLayouts = ["overlay", "band", "sticker"] as const
+
+// One 9:16 ad variation, aimed at a single angle from the business profile.
+export type CreativeVariation = {
+  id: string
+  // The idea the ad leans on, e.g. "Hidden gem".
+  angle: string
+  // Who the ad is aimed at, from the profile's audience keywords.
+  audience: string
+  headline: string
+  subline: string
+  cta: string
+  layout: (typeof creativeLayouts)[number]
+  // Which of the owner's uploaded photos the ad was made from, by position.
+  sourcePhotos: number[]
+  // A finished creative image. Without one, the card is drawn from the first source photo.
+  image?: string
+}
 
 export type SetupDraft = {
   business?: BusinessDetails
@@ -130,24 +156,27 @@ export type SetupDraft = {
   suggestion?: ProfileSuggestion
   // The business the suggestion was made for, so it's redone if step 1 changes.
   suggestionFor?: string
+  photos?: UploadedPhoto[]
+  creatives?: CreativeVariation[]
+  // The photos and profile the creatives were made from, so they're redone if either changes.
+  creativesFor?: string
+  selectedCreatives?: string[]
 }
 
 export function businessKey(business: BusinessDetails) {
   return JSON.stringify(business)
 }
 
+export function creativesKey(photos: UploadedPhoto[], profile: BusinessProfile) {
+  return JSON.stringify({ photos: photos.map((p) => p.id), profile })
+}
+
+let draft: SetupDraft = {}
+
 export function loadDraft(): SetupDraft {
-  try {
-    return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "{}")
-  } catch {
-    return {}
-  }
+  return draft
 }
 
 export function saveDraft(update: Partial<SetupDraft>) {
-  try {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...loadDraft(), ...update }))
-  } catch {
-    // Storage can be unavailable (private mode); the form still works for this visit.
-  }
+  draft = { ...draft, ...update }
 }
