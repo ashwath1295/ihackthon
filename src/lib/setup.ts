@@ -30,7 +30,7 @@ function isWebsite(value: string) {
   return websiteHost(value).includes(".")
 }
 
-export const setupSteps = ["Your business", "Business profile", "Creatives", "Launch"] as const
+export const setupSteps = ["Your business", "Business profile", "Creatives", "Campaign"] as const
 
 export const businessSchema = z.object({
   businessName: z
@@ -87,14 +87,6 @@ export const profileSchema = z.object({
       path: ["ageMax"],
       message: "The oldest age must be at least the youngest.",
     }),
-  budget: z.object({
-    monthly: z
-      .number({ error: "Enter a monthly budget." })
-      .int("Use whole dollars.")
-      .min(100, "Set at least $100 a month.")
-      .max(100_000, "Keep it under $100,000 a month."),
-    metaShare: z.number().int().min(0).max(100),
-  }),
 })
 
 export type BusinessProfile = z.infer<typeof profileSchema>
@@ -105,7 +97,6 @@ export function emptyProfile(): BusinessProfile {
     brand: [],
     products: [],
     audience: { keywords: [], ageMin: 25, ageMax: 54, gender: "all" },
-    budget: { monthly: 500, metaShare: 50 },
   }
 }
 
@@ -149,6 +140,81 @@ export type CreativeVariation = {
   image?: string
 }
 
+export const platformOptions = [
+  { value: "meta", label: "Meta", detail: "Facebook and Instagram" },
+  { value: "google", label: "Google", detail: "Search, Maps, and YouTube" },
+] as const
+
+export type Platform = (typeof platformOptions)[number]["value"]
+
+export const conversionSourceOptions = [
+  {
+    value: "qr",
+    label: "QR codes",
+    tag: "In-store",
+    detail: "Customers scan a code at your counter. Each scan counts as an in-store visit.",
+  },
+  {
+    value: "website",
+    label: "Website",
+    tag: "Online",
+    detail: "Add the AdPilot tag to count orders, bookings, and sign-ups on your site.",
+  },
+  {
+    value: "pos",
+    label: "Point of sale",
+    tag: "In-store",
+    detail: "Connect Square, Toast, or Clover to count sales at the register.",
+  },
+  {
+    value: "customer-list",
+    label: "Customer list",
+    tag: "Upload",
+    detail: "Upload emails and phone numbers of past customers as a CSV.",
+  },
+] as const
+
+export type ConversionSource = (typeof conversionSourceOptions)[number]["value"]
+
+const platformValues = platformOptions.map((p) => p.value) as [Platform, ...Platform[]]
+const sourceValues = conversionSourceOptions.map((s) => s.value) as [
+  ConversionSource,
+  ...ConversionSource[],
+]
+
+export const campaignSchema = z.object({
+  platforms: z.array(z.enum(platformValues)).min(1, "Pick at least one platform."),
+  budget: z.object({
+    monthly: z
+      .number({ error: "Enter a monthly budget." })
+      .int("Use whole dollars.")
+      .min(100, "Set at least $100 a month.")
+      .max(100_000, "Keep it under $100,000 a month."),
+    // "auto" lets AdPilot split the budget between platforms and keep adjusting it.
+    splitMode: z.enum(["auto", "custom"]),
+    // Meta's share when both platforms are on; Google gets the rest.
+    metaShare: z.number().int().min(0).max(100),
+  }),
+  conversionSources: z
+    .array(z.enum(sourceValues))
+    .min(1, "Add at least one way to count conversions."),
+})
+
+export type CampaignSettings = z.infer<typeof campaignSchema>
+
+// Meta's share of the budget, which is all or nothing when only one platform is on.
+export function metaShareFor(platforms: Platform[], metaShare: number) {
+  if (!platforms.includes("google")) return 100
+  if (!platforms.includes("meta")) return 0
+  return metaShare
+}
+
+export type CampaignSuggestion = {
+  campaign: CampaignSettings
+  // Why the automatic split gives each platform its share, in plain words.
+  splitReasons: Record<Platform, string>
+}
+
 export type SetupDraft = {
   business?: BusinessDetails
   profile?: BusinessProfile
@@ -161,6 +227,7 @@ export type SetupDraft = {
   // The photos and profile the creatives were made from, so they're redone if either changes.
   creativesFor?: string
   selectedCreatives?: string[]
+  campaign?: CampaignSettings
 }
 
 export function businessKey(business: BusinessDetails) {

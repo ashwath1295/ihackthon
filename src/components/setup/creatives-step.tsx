@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ArrowRight, CircleCheck, ImageUp, Sparkles, TriangleAlert } from "lucide-react"
+import { ArrowLeft, ArrowRight, ImageUp, Sparkles, TriangleAlert } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -102,7 +102,6 @@ export default function CreativesStep() {
       : "upload",
   )
   const [showErrors, setShowErrors] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     if (!business) router.replace("/setup")
@@ -250,7 +249,6 @@ export default function CreativesStep() {
         selected={selected}
         onChange={(selected) => {
           setSelected(selected)
-          setSaved(false)
         }}
         invalid={tooFewPicks}
       />
@@ -275,12 +273,6 @@ export default function CreativesStep() {
               Pick at least {MIN_CREATIVE_PICKS} so the platforms have something to test.
             </p>
           )}
-          {saved && (
-            <p role="status" className="flex items-center gap-2 text-sm text-emerald-700">
-              <CircleCheck className="size-4" />
-              Saved. Launch is next.
-            </p>
-          )}
           <Button
             type="button"
             size="lg"
@@ -291,7 +283,7 @@ export default function CreativesStep() {
                 return
               }
               saveDraft({ selectedCreatives: selected })
-              setSaved(true)
+              router.push("/setup/campaign")
             }}
           >
             Continue with {selected.length}

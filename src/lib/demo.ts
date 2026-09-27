@@ -16,12 +16,10 @@ export function isDemoBusiness(business: BusinessDetails) {
 }
 
 // The creatives step starts with the shop's real photos. The demo ads are made from the first
-// three (see creatives-mock.ts), so keep this order.
+// two (see creatives-mock.ts), so keep this order.
 export const demoPhotos: UploadedPhoto[] = [
   "Latte and financier on the counter",
   "Latte at the front window",
-  "Pastries on pink",
-  "Pastries on green",
   "The team out front",
   "The coffee bar",
   "Seating and art",

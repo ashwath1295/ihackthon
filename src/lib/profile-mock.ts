@@ -22,7 +22,6 @@ const goldenGoatCoffee: ProfileSuggestion = {
       ageMax: 45,
       gender: "all",
     },
-    budget: { monthly: 600, metaShare: 60 },
   },
 }
 

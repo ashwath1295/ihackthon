@@ -39,7 +39,7 @@ const goldenGoatCoffee: Omit<CreativeVariation, "id">[] = [
     subline: "599 3rd St #100 · Mon–Fri 8–3 · Sat 9–2",
     cta: "Come by this week",
     layout: "overlay",
-    sourcePhotos: [0, 2],
+    sourcePhotos: [0],
     image: "/demo/golden-goat/ad-3.webp",
   },
 ]
