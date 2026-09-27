@@ -29,7 +29,7 @@ export default function Home() {
             about your business and AdPilot does the rest.
           </p>
           <Link
-            href="/get-started"
+            href="/setup"
             className={buttonVariants({ size: "lg", className: "mt-10 h-12 px-6 text-base" })}
           >
             Get started
