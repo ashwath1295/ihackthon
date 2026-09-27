@@ -49,7 +49,14 @@ export default function CampaignStep() {
   const [draft] = useState(loadDraft)
   const { business, profile, selectedCreatives } = draft
   const [suggestion] = useState(() =>
-    business && profile ? suggestCampaign(business, profile) : null,
+    business && profile ? suggestCampaign(business, profile, selectedCreatives?.length ?? 0) : null,
+  )
+  // The picked ads, or the photo a mock ad was drawn over, for the placement previews.
+  const [adImages] = useState(() =>
+    (draft.creatives ?? [])
+      .filter((creative) => selectedCreatives?.includes(creative.id))
+      .map((creative) => creative.image ?? draft.photos?.[creative.sourcePhotos[0]]?.url)
+      .filter((url): url is string => Boolean(url)),
   )
   const [campaign, setCampaign] = useState<CampaignSettings | undefined>(draft.campaign)
   const [phase, setPhase] = useState<Phase>("edit")
@@ -160,7 +167,9 @@ export default function CampaignStep() {
         </div>
       </div>
       <CampaignForm
+        businessName={business.businessName}
         suggestion={suggestion}
+        adImages={adImages}
         initial={campaign}
         onLaunch={(campaign) => {
           saveDraft({ campaign })

@@ -16,6 +16,15 @@
       transform: translateY(300%);
     }
   }
+
+  /* Dashes marching along a line, for arrows in flow diagrams. */
+  --animate-dash-flow: dash-flow 0.8s linear infinite;
+
+  @keyframes dash-flow {
+    to {
+      stroke-dashoffset: -12;
+    }
+  }
 }
 
 @theme inline {

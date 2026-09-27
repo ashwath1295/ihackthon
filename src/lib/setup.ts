@@ -209,10 +209,28 @@ export function metaShareFor(platforms: Platform[], metaShare: number) {
   return metaShare
 }
 
+// How an ad looks in a placement, for drawing a small preview of it.
+export type ChannelFormat = "vertical" | "feed" | "search" | "map"
+
+// A placement AdPilot picks within a platform, e.g. Instagram Reels.
+export type Channel = {
+  name: string
+  format: ChannelFormat
+  formatLabel: string
+  // This placement's share of its platform's budget, in percent.
+  share: number
+  // Why it's a good fit for the business, in a few words.
+  detail: string
+}
+
 export type CampaignSuggestion = {
   campaign: CampaignSettings
   // Why the automatic split gives each platform its share, in plain words.
   splitReasons: Record<Platform, string>
+  // The placements the automatic plan uses on each platform.
+  channels: Record<Platform, Channel[]>
+  // What the plan was based on, shown back to the owner.
+  basedOn: { kind: "location" | "audience" | "product" | "ads"; label: string }[]
 }
 
 export type SetupDraft = {
