@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "iHackathon",
-  description: "iHackathon sample Next.js app",
+  title: "AdPilot: Your ads, on autopilot",
+  description: "Run ads on Meta and Google without learning either platform.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
