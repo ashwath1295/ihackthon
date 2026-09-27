@@ -3,7 +3,11 @@ import { setupSteps } from "@/lib/setup"
 
 export default function SetupProgress({ current }: { current: number }) {
   return (
-    <ol className="grid grid-cols-4 gap-2" aria-label="Setup progress">
+    <ol
+      className="grid gap-2"
+      style={{ gridTemplateColumns: `repeat(${setupSteps.length}, minmax(0, 1fr))` }}
+      aria-label="Setup progress"
+    >
       {setupSteps.map((step, index) => (
         <li
           key={step}
