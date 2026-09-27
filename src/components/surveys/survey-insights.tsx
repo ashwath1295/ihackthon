@@ -7,27 +7,31 @@ import {
   sourceBreakdown,
   topLocations,
 } from "@/lib/surveys/insights"
+import { lastOrderDate, totalSpend, type CrmCustomer } from "@/lib/crm/types"
 import type { Survey, SurveyResponse } from "@/lib/surveys/types"
+import { cn } from "@/lib/utils"
 import BarList from "@/components/dashboard/bar-list"
 import { channelBg } from "@/components/dashboard/channel-colors"
-import { formatNumber, formatPercent } from "@/components/dashboard/format"
+import { formatDate, formatNumber, formatPercent, formatUsd } from "@/components/dashboard/format"
 import TrendChart from "@/components/dashboard/trend-chart"
 
 type Props = {
   responses: SurveyResponse[] // already filtered
   surveys: Survey[]
+  customers: CrmCustomer[]
   from: string
   to: string
 }
 
 const card = "rounded-2xl border bg-card p-5 shadow-xs sm:p-6"
 
-export default function SurveyInsights({ responses, surveys, from, to }: Props) {
+export default function SurveyInsights({ responses, surveys, customers, from, to }: Props) {
   const total = responses.length
   const ages = ageBreakdown(responses)
   const sources = sourceBreakdown(responses)
   const locations = topLocations(responses)
   const contacts = optedInContacts(responses, surveys)
+  const crmByResponse = new Map(customers.flatMap((c) => c.surveyResponseIds.map((id) => [id, c] as const)))
   const answeredAge = ages.reduce((a, b) => a + b.count, 0)
   const answeredSource = sources.reduce((a, b) => a + b.count, 0)
   const topSource = [...sources].sort((a, b) => b.count - a.count)[0]
@@ -124,19 +128,46 @@ export default function SurveyInsights({ responses, surveys, from, to }: Props) 
             <h3 className="font-semibold">Newest opted-in contacts</h3>
             <Link href="/#customers" className="text-sm text-primary underline underline-offset-4">Open in CRM</Link>
           </div>
-          <ul className="mt-4 divide-y text-sm">
-            {contacts.slice(0, 6).map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
-                <span className="min-w-0">
-                  <span className="block truncate font-medium">{c.name ?? c.email ?? c.phone}</span>
-                  <span className="block truncate text-muted-foreground">{c.email ?? c.phone}</span>
-                </span>
-                <span className="shrink-0 text-right text-muted-foreground">
-                  <span className="block">{c.store}</span>
-                  <span className="block text-xs">{c.source ?? "Source not given"}</span>
-                </span>
-              </li>
-            ))}
+          <p className="mt-1 text-sm text-muted-foreground">Linked to the CRM automatically, with what they&apos;ve spent since.</p>
+          <ul className="mt-3 divide-y text-sm">
+            {contacts.slice(0, 6).map((c) => {
+              const crm = crmByResponse.get(c.id)
+              const spend = crm ? totalSpend(crm) : 0
+              const last = crm && lastOrderDate(crm)
+              return (
+                <li key={c.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2">
+                      <span className="truncate font-medium">{c.name ?? c.email ?? c.phone}</span>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                          spend ? "bg-emerald-500/10 text-emerald-700" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {spend ? "Customer" : "Lead"}
+                      </span>
+                    </span>
+                    <span className="block truncate text-muted-foreground">
+                      {c.store} · {c.source ?? "Source not given"}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    {spend ? (
+                      <>
+                        <span className="block font-semibold tabular-nums">{formatUsd(spend)}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {crm!.orders.length} {crm!.orders.length === 1 ? "order" : "orders"}
+                          {last ? ` · last ${formatDate(last.slice(0, 10))}` : ""}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="block text-xs text-muted-foreground">No purchases yet</span>
+                    )}
+                  </span>
+                </li>
+              )
+            })}
             {!contacts.length && <li className="py-2.5 text-muted-foreground">No one has opted in yet.</li>}
           </ul>
         </div>

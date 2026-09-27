@@ -36,3 +36,4 @@ Owners create a QR survey at `/surveys` (or **Create QR survey** on the dashboar
 
 - **Testing with a phone:** in local development the QR code uses this computer's Wi-Fi address instead of `localhost`, so a phone on the same Wi-Fi can open it. Once deployed, set `SITE_URL` (e.g. `SITE_URL=https://adpilot.example.com`).
 - **Data:** surveys and responses are saved to `.data/surveys.json` (not committed), seeded from mock data in `src/lib/surveys/mock-data.ts`. Delete the file to reset the demo. To use a real database, replace the functions in `src/lib/surveys/store.ts`.
+- **CRM:** survey contacts who opt in are added to the CRM automatically (matched by email or phone) in `.data/crm.json`, seeded with mock purchases from `src/lib/crm/mock-data.ts`. The QR surveys page shows what each contact has spent and which channels bring paying customers. To connect a real CRM, replace `src/lib/crm/store.ts`.

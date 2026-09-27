@@ -2,41 +2,21 @@
 // (.data/surveys.json), seeded from mock-data.ts. Swap these functions for
 // database calls to go to production; nothing else needs to change.
 import { randomBytes } from "node:crypto"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
-import path from "node:path"
 
+import { jsonFileStore } from "@/lib/json-file-store"
 import { mockResponses, mockSurveys } from "@/lib/surveys/mock-data"
 import type { Survey, SurveyResponse } from "@/lib/surveys/types"
 
 type Db = { surveys: Survey[]; responses: SurveyResponse[] }
 
-const FILE = path.join(process.cwd(), ".data", "surveys.json")
+const file = jsonFileStore<Db>("surveys.json", () => ({
+  surveys: structuredClone(mockSurveys),
+  responses: structuredClone(mockResponses),
+}))
+const load = file.read
+const save = file.write
 
-// Used when the file system is read-only (e.g. serverless hosting):
-// data then lives in memory until the server restarts.
-let memory: Db | null = null
-
-async function load(): Promise<Db> {
-  if (memory) return memory
-  try {
-    return JSON.parse(await readFile(FILE, "utf8")) as Db
-  } catch {
-    const seed = { surveys: structuredClone(mockSurveys), responses: structuredClone(mockResponses) }
-    await save(seed)
-    return seed
-  }
-}
-
-async function save(db: Db) {
-  try {
-    await mkdir(path.dirname(FILE), { recursive: true })
-    await writeFile(FILE, JSON.stringify(db, null, 2))
-  } catch {
-    memory = db
-  }
-}
-
-const newId = () => randomBytes(6).toString("base64url").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8).padEnd(8, "0")
+export const newId = () => randomBytes(6).toString("base64url").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8).padEnd(8, "0")
 
 export async function listSurveys() {
   const db = await load()

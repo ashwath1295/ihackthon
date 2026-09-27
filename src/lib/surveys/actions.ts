@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 
+import { linkSurveyResponse } from "@/lib/crm/store"
 import { addResponse, createSurvey, getSurvey, updateSurvey } from "@/lib/surveys/store"
 import {
   AGE_GROUPS,
@@ -107,7 +108,9 @@ export async function submitResponseAction(
     return { ok: false, errors: { form: "Answer at least one question." } }
   }
 
-  await addResponse({ surveyId, ...answers, contact, consent: Boolean(contact && d.consent) })
+  const response = await addResponse({ surveyId, ...answers, contact, consent: Boolean(contact && d.consent) })
+  // Opted-in contacts go straight into the CRM (matched by email or phone).
+  await linkSurveyResponse(response)
   revalidatePath("/surveys")
   revalidatePath("/")
   return { ok: true }

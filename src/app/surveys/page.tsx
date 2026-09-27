@@ -3,9 +3,11 @@ import Link from "next/link"
 import { connection } from "next/server"
 import { Plus, QrCode } from "lucide-react"
 
+import { listCustomers } from "@/lib/crm/store"
 import { filterResponses } from "@/lib/surveys/insights"
 import { listResponses, listSurveys } from "@/lib/surveys/store"
 import AppHeader from "@/components/app-header"
+import ConversionBySource from "@/components/surveys/conversion-by-source"
 import { formatDate, formatNumber } from "@/components/dashboard/format"
 import InsightFilters from "@/components/surveys/insight-filters"
 import StatusBadge from "@/components/surveys/status-badge"
@@ -21,7 +23,7 @@ const shift = (iso: string, days: number) => new Date(Date.parse(`${iso}T00:00:0
 export default async function SurveysPage({ searchParams }: PageProps<"/surveys">) {
   await connection()
   const q = await searchParams
-  const [surveys, responses] = await Promise.all([listSurveys(), listResponses()])
+  const [surveys, responses, customers] = await Promise.all([listSurveys(), listResponses(), listCustomers()])
 
   const surveyId = typeof q.survey === "string" && surveys.some((s) => s.id === q.survey) ? q.survey : undefined
   const from = isDate(q.from) ? q.from : undefined
@@ -114,7 +116,8 @@ export default async function SurveysPage({ searchParams }: PageProps<"/surveys"
               { label: "Last 30 days", from: shift(today, -29), to: today },
             ]}
           />
-          <SurveyInsights responses={filtered} surveys={surveys} from={chartFrom} to={chartTo} />
+          <SurveyInsights responses={filtered} surveys={surveys} customers={customers} from={chartFrom} to={chartTo} />
+          {filtered.length > 0 && <ConversionBySource responses={filtered} customers={customers} />}
         </section>
       </main>
     </div>
