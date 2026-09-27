@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import BrandLogo from "@/components/brand-logo"
 import LoginForm from "@/components/login-form"
+import { DEMO_ACCOUNT } from "@/lib/demo-account"
 
 export const metadata: Metadata = {
   title: "Log in · AdPilot",
@@ -22,6 +23,12 @@ export default function LoginPage() {
           <div className="mt-6">
             <LoginForm />
           </div>
+        </div>
+        <div className="mt-4 rounded-xl border border-dashed bg-card/60 p-4 text-center text-sm">
+          <p className="font-medium">Demo account</p>
+          <p className="mt-1 font-mono text-muted-foreground">
+            {DEMO_ACCOUNT.email} / {DEMO_ACCOUNT.password}
+          </p>
         </div>
       </div>
     </main>

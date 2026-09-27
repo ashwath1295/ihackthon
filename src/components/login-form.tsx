@@ -1,15 +1,17 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Info } from "lucide-react"
+import { CircleAlert } from "lucide-react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { DEMO_ACCOUNT } from "@/lib/demo-account"
 
 const loginSchema = z.object({
   email: z.email("Enter a valid email address"),
@@ -21,22 +23,28 @@ type LoginDetails = z.infer<typeof loginSchema>
 const inputClass = "h-12 rounded-xl bg-card px-4 text-base shadow-xs md:text-base"
 
 export default function LoginForm() {
-  const [submitted, setSubmitted] = useState(false)
+  const router = useRouter()
+  const [failed, setFailed] = useState(false)
 
   const form = useForm<LoginDetails>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   })
 
-  // There's no backend yet, so we only validate the form.
-  function onSubmit() {
-    setSubmitted(true)
+  function onSubmit({ email, password }: LoginDetails) {
+    const ok =
+      email.trim().toLowerCase() === DEMO_ACCOUNT.email && password === DEMO_ACCOUNT.password
+    if (ok) {
+      router.push("/setup")
+    } else {
+      setFailed(true)
+    }
   }
 
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
-      onChange={() => setSubmitted(false)}
+      onChange={() => setFailed(false)}
       className="flex flex-col gap-6"
       noValidate
     >
@@ -84,16 +92,10 @@ export default function LoginForm() {
         Log in
       </Button>
 
-      {submitted && (
-        <p role="status" className="flex gap-2 rounded-xl bg-secondary p-3 text-sm text-secondary-foreground">
-          <Info className="mt-0.5 size-4 shrink-0" />
-          <span>
-            Sign-in isn&apos;t connected yet.{" "}
-            <Link href="/setup" className="font-medium underline underline-offset-4">
-              Set up a campaign
-            </Link>{" "}
-            in the meantime.
-          </span>
+      {failed && (
+        <p role="alert" className="flex gap-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
+          <CircleAlert className="mt-0.5 size-4 shrink-0" />
+          That email and password don&apos;t match. Use the demo account below.
         </p>
       )}
 

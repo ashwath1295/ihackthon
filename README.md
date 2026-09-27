@@ -19,3 +19,13 @@ npm run dev
 ```
 
 Open http://localhost:3000.
+
+## Demo login
+
+Use this account on the login page (`/login`):
+
+| Email | Password |
+| --- | --- |
+| `demo@adpilot.com` | `demo1234` |
+
+Logging in takes you to campaign setup (`/setup`). This is a demo-only account checked in the browser (see `src/lib/demo-account.ts`); there's no real authentication yet.
