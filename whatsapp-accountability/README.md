@@ -1,4 +1,4 @@
-# WhatsApp Accountability System
+# Team Accountability System (WhatsApp, Google Chat, Slack, Teams, Telegram)
 
 **Goal:** Juan sends an instruction once. The system tracks who acknowledged it, who took ownership, who finished, and who went silent. It reminds people, escalates, and reports patterns, so Juan never has to repeat himself.
 
@@ -71,6 +71,28 @@ python -m accountability --config config.toml serve --port 8000
 ```
 
 Deploy on Render, Railway, Fly.io, or any small VPS, behind HTTPS.
+
+### Every platform
+The same rules and scorecard apply on every chat app. Set each person's `email` and `ids` in `config.toml`, and where their reminders go with `notify`.
+
+| Platform | How messages come in | How reminders go out |
+|---|---|---|
+| **Google Chat** | `google-chat-login` once, then the server reads your spaces every minute as you (read-only). This sees every message; a Chat app alone only sees messages that @mention it. Optional Chat app: `POST /webhook/google-chat` (set `GOOGLE_CHAT_AUDIENCE` to your project number). | Space webhook with @mentions (`GOOGLE_CHAT_WEBHOOKS`) |
+| **WhatsApp** | Cloud API `/webhook/whatsapp`, a group bridge `/webhook/generic`, or chat exports | Cloud API 1:1 (`NOTIFIER=whatsapp`) |
+| **Slack** | Events API to `/webhook/slack` (`message.channels`, `reaction_added`; set `SLACK_SIGNING_SECRET`) | Bot DM (`SLACK_BOT_TOKEN`) |
+| **Microsoft Teams** | Bot messaging endpoint `/webhook/teams?token=...` (`TEAMS_WEBHOOK_TOKEN`; needs the `ChannelMessage.Read.Group` permission to see every channel message) | Falls back to each person's other channel |
+| **Telegram** | Bot webhook `/webhook/telegram` (privacy mode off; `TELEGRAM_WEBHOOK_SECRET`) | Bot message (`TELEGRAM_BOT_TOKEN`) |
+
+Turn on several senders at once: `NOTIFIERS=whatsapp,slack,google_chat` with `NOTIFIER=whatsapp` as the default.
+
+**Google Chat setup:** in Google Cloud, enable the Google Chat API and the People API, create an OAuth client (Desktop app), download it as `client_secret.json`, fill in `[google_chat]` in `config.toml`, then run `python -m accountability --config config.toml google-chat-login`.
+
+### The Claude connector (ask Claude about your team from any device)
+```bash
+export CONNECTOR_TOKEN=$(python -c "import secrets; print(secrets.token_urlsafe(24))")
+python -m accountability --config config.toml connector --port 8001
+```
+Deploy it behind HTTPS, then in Claude go to **Settings → Connectors → Add custom connector** and paste `https://<your-server>/mcp/<CONNECTOR_TOKEN>`. Added once on claude.ai, it works in the Claude web, desktop and mobile apps and in Claude Code. The link is the password, so keep it private. Its tools are read-only: open messages, scorecard, one person's history, messages per period, the written report, the roster, and recent alerts. Set `CONNECTOR_HOSTS=your.domain.com` to lock it to your domain.
 
 ### Live dashboard (Google Sheets)
 The interactive dashboard reads three Google Sheets in the Drive folder **Team Accountability (live data)**: `scorecard`, `open_messages` and `message_responses_v2`. Every time someone opens or refreshes it, it reads the sheets again. The tracker rewrites them every few minutes:

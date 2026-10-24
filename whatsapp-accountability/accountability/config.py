@@ -16,6 +16,9 @@ class Member:
     role: str = ""
     manager: str | None = None  # name of the person who gets escalations
     aliases: list[str] = field(default_factory=list)
+    email: str = ""  # Google Workspace / Microsoft 365 email
+    ids: list[str] = field(default_factory=list)  # platform ids, e.g. "slack:U123", "gchat:users/456"
+    notify: str = ""  # where this person gets reminders: whatsapp | slack | telegram | google_chat (default: NOTIFIER)
     is_owner: bool = False  # the boss whose messages create instructions
     exempt: bool = False  # never expected to respond (e.g. a bot or an observer)
 
@@ -63,6 +66,7 @@ class Settings:
     use_claude: bool = False
     claude_model: str = "claude-opus-5-5"
     sheets: SheetsConfig | None = None
+    google_chat: dict | None = None  # {"token": path, "client_secrets": path, "spaces": [...]}
 
     @property
     def owner(self) -> Member:
@@ -73,6 +77,11 @@ class Settings:
 
     def find_member(self, phone_or_name: str | None) -> Member | None:
         if not phone_or_name:
+            return None
+        for m in self.members:
+            if phone_or_name in m.ids or (m.email and m.email.lower() == phone_or_name.strip().lower()):
+                return m
+        if ":" in phone_or_name:  # an unknown platform id; don't mistake its digits for a phone number
             return None
         key = normalize_phone(phone_or_name)
         for m in self.members:
@@ -126,5 +135,6 @@ def load_settings(path: str | Path) -> Settings:
             sheet_ids={k: sh[k] for k in ("scorecard", "open_messages", "message_responses") if sh.get(k)},
             sync_minutes=sh.get("sync_minutes", 5),
         )
+    settings.google_chat = data.get("google_chat")
     settings.owner  # fail fast if no owner is configured
     return settings

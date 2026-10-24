@@ -21,6 +21,7 @@ class IncomingMessage:
     has_media: bool = False  # photo/video/doc attached (evidence)
     reaction_to: str | None = None  # set when this is an emoji reaction
     sender_name: str = ""
+    thread_id: str | None = None  # Google Chat thread: replies share their root's thread
 
 
 class Status(StrEnum):

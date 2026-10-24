@@ -87,6 +87,111 @@ class WebhookNotifier(Notifier):
                               "mentions": [m.phone for m in mention]})
 
 
+def _platform_id(member: Member, platform: str) -> str | None:
+    prefix = platform + ":"
+    return next((i[len(prefix):] for i in member.ids if i.startswith(prefix)), None)
+
+
+class SlackNotifier(Notifier):
+    """Slack bot (chat:write). DMs go to the member's "slack:U…" id."""
+
+    def __init__(self, token: str | None = None):
+        self.token = token or os.environ["SLACK_BOT_TOKEN"]
+
+    def _post(self, channel: str, text: str) -> None:
+        _post_json("https://slack.com/api/chat.postMessage", {"channel": channel, "text": text},
+                   {"Authorization": f"Bearer {self.token}"})
+
+    def owns(self, chat_id: str) -> bool:
+        return chat_id[:1] in ("C", "G") and chat_id.isalnum()
+
+    def send_direct(self, member: Member, text: str) -> None:
+        if uid := _platform_id(member, "slack"):
+            self._post(uid, text)
+        else:
+            log.warning("No slack id for %s; reminder not sent", member.name)
+
+    def send_group(self, chat_id: str, text: str, mention: list[Member]) -> None:
+        tags = " ".join(f"<@{u}>" for m in mention if (u := _platform_id(m, "slack")))
+        self._post(chat_id, f"{text} {tags}".strip())
+
+
+class TelegramNotifier(Notifier):
+    """Telegram bot. DMs need the person to have started a chat with the bot once."""
+
+    def __init__(self, token: str | None = None):
+        self.token = token or os.environ["TELEGRAM_BOT_TOKEN"]
+
+    def _post(self, chat_id: str, text: str) -> None:
+        _post_json(f"https://api.telegram.org/bot{self.token}/sendMessage", {"chat_id": chat_id, "text": text})
+
+    def owns(self, chat_id: str) -> bool:
+        return chat_id.lstrip("-").isdigit() and chat_id.startswith("-")
+
+    def send_direct(self, member: Member, text: str) -> None:
+        if uid := _platform_id(member, "telegram"):
+            self._post(uid, text)
+        else:
+            log.warning("No telegram id for %s; reminder not sent", member.name)
+
+    def send_group(self, chat_id: str, text: str, mention: list[Member]) -> None:
+        self._post(chat_id, text + ("\n" + ", ".join(m.name for m in mention) if mention else ""))
+
+
+class GoogleChatNotifier(Notifier):
+    """Posts into a Google Chat space through its incoming webhook, @mentioning people.
+
+    Set GOOGLE_CHAT_WEBHOOKS to "spaces/AAA=https://chat.googleapis.com/v1/spaces/AAA/messages?key=...,..."
+    A "direct" reminder is posted in the person's default space (GOOGLE_CHAT_DEFAULT_SPACE) with an @mention.
+    """
+
+    def __init__(self, webhooks: dict[str, str] | None = None, default_space: str | None = None):
+        if webhooks is None:
+            raw = os.environ.get("GOOGLE_CHAT_WEBHOOKS", "")
+            webhooks = dict(pair.split("=", 1) for pair in raw.split(",") if "=" in pair)
+        self.webhooks = webhooks
+        self.default_space = default_space or os.environ.get("GOOGLE_CHAT_DEFAULT_SPACE") or next(iter(webhooks), None)
+
+    def owns(self, chat_id: str) -> bool:
+        return chat_id in self.webhooks
+
+    @staticmethod
+    def _mention(m: Member) -> str:
+        uid = _platform_id(m, "gchat")
+        return f"<{uid}>" if uid else m.name
+
+    def send_direct(self, member: Member, text: str) -> None:
+        if not self.default_space:
+            log.warning("No Google Chat space configured; reminder for %s not sent", member.name)
+            return
+        _post_json(self.webhooks[self.default_space], {"text": f"{self._mention(member)} {text}"})
+
+    def send_group(self, chat_id: str, text: str, mention: list[Member]) -> None:
+        tags = " ".join(self._mention(m) for m in mention)
+        _post_json(self.webhooks[chat_id], {"text": f"{text} {tags}".strip()})
+
+
+class RoutingNotifier(Notifier):
+    """Sends each person's reminders on their own platform (member.notify), group posts to the group's platform."""
+
+    def __init__(self, channels: dict[str, Notifier], default: str):
+        self.channels = channels
+        self.default = default
+
+    def send_direct(self, member: Member, text: str) -> None:
+        channel = self.channels.get(member.notify) or self.channels[self.default]
+        channel.send_direct(member, text)
+
+    def send_group(self, chat_id: str, text: str, mention: list[Member]) -> None:
+        for channel in self.channels.values():
+            owns = getattr(channel, "owns", None)
+            if owns and owns(chat_id):
+                channel.send_group(chat_id, text, mention)
+                return
+        for m in mention:  # a group we can't post to: tell each person directly
+            self.send_direct(m, text)
+
+
 def _post_json(url: str, payload: dict, headers: dict | None = None) -> None:
     req = urllib.request.Request(
         url,
@@ -99,10 +204,19 @@ def _post_json(url: str, payload: dict, headers: dict | None = None) -> None:
             raise RuntimeError(f"Notification failed: HTTP {resp.status}")
 
 
+BUILDERS = {
+    "whatsapp": WhatsAppCloudNotifier,
+    "webhook": WebhookNotifier,
+    "slack": SlackNotifier,
+    "telegram": TelegramNotifier,
+    "google_chat": GoogleChatNotifier,
+    "console": ConsoleNotifier,
+}
+
+
 def notifier_from_env() -> Notifier:
-    mode = os.environ.get("NOTIFIER", "console").lower()
-    if mode == "whatsapp":
-        return WhatsAppCloudNotifier()
-    if mode == "webhook":
-        return WebhookNotifier()
-    return ConsoleNotifier()
+    """NOTIFIER is the default channel; NOTIFIERS lists every channel to enable, e.g. "whatsapp,slack,google_chat"."""
+    default = os.environ.get("NOTIFIER", "console").lower()
+    names = {n.strip().lower() for n in os.environ.get("NOTIFIERS", default).split(",") if n.strip()} | {default}
+    channels = {name: BUILDERS[name]() for name in names}
+    return channels[default] if len(channels) == 1 else RoutingNotifier(channels, default)

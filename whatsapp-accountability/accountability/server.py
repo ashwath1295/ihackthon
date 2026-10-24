@@ -1,4 +1,4 @@
-"""Web service: WhatsApp webhooks in, live dashboard and reports out.
+"""Web service: chat webhooks in (WhatsApp, Google Chat, Slack, Teams, Telegram), dashboard and reports out.
 
 Run with:  python -m accountability serve --config config.toml
 """
@@ -12,6 +12,7 @@ import html
 import logging
 import os
 import threading
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
@@ -22,6 +23,7 @@ from .config import Settings
 from .db import connect
 from .enforcer import Enforcer
 from .ingest.generic import parse_generic
+from .ingest.platforms import parse_google_chat_event, parse_slack_event, parse_teams_activity, parse_telegram_update
 from .ingest.whatsapp_cloud import parse_webhook
 from .notifier import Notifier
 from .sheets_sync import SheetsSync
@@ -37,6 +39,11 @@ def create_app(settings: Settings, notifier: Notifier, tick_seconds: int = 60) -
     tracker = Tracker(conn, settings)
     enforcer = Enforcer(conn, settings, notifier)
     sheets = SheetsSync(settings.sheets) if settings.sheets else None
+    gchat = None
+    if settings.google_chat and settings.google_chat.get("token"):
+        from .ingest.google_chat_poll import GoogleChatPoller
+
+        gchat = GoogleChatPoller(conn, settings.google_chat["token"], settings.google_chat.get("spaces"))
 
     async def ticker():
         last_sync = None
@@ -44,6 +51,9 @@ def create_app(settings: Settings, notifier: Notifier, tick_seconds: int = 60) -
             try:
                 with lock:
                     now = utcnow()
+                    if gchat:
+                        for msg in gchat.poll(now):
+                            tracker.ingest(msg)
                     for event in enforcer.tick(now):
                         log.info("enforcer: %s", event)
                     if sheets and (last_sync is None or (now - last_sync).total_seconds() >= settings.sheets.sync_minutes * 60):
@@ -93,6 +103,66 @@ def create_app(settings: Settings, notifier: Notifier, tick_seconds: int = 60) -
             for msg in parse_webhook(await request.json()):
                 results.append(tracker.ingest(msg))
         return {"ok": True, "results": results}
+
+    def ingest_all(msgs) -> list[dict]:
+        with lock:
+            return [tracker.ingest(m) for m in msgs]
+
+    # ---------------------------------------------------------------- Google Chat app
+
+    @app.post("/webhook/google-chat")
+    async def google_chat_webhook(request: Request):
+        audience = os.environ.get("GOOGLE_CHAT_AUDIENCE")  # your Google Cloud project number
+        if audience:
+            from google.auth.transport import requests as google_requests
+            from google.oauth2 import id_token
+
+            token = request.headers.get("authorization", "").removeprefix("Bearer ")
+            try:
+                claims = id_token.verify_token(
+                    token, google_requests.Request(), audience=audience,
+                    certs_url="https://www.googleapis.com/service_accounts/v1/metadata/x509/chat@system.gserviceaccount.com",
+                )
+                if claims.get("iss") != "chat@system.gserviceaccount.com":
+                    raise ValueError("wrong issuer")
+            except Exception as exc:
+                raise HTTPException(status_code=401, detail="Bad Google Chat token") from exc
+        ingest_all(parse_google_chat_event(await request.json()))
+        return {}
+
+    # ---------------------------------------------------------------- Slack
+
+    @app.post("/webhook/slack")
+    async def slack_webhook(request: Request):
+        body = await request.body()
+        secret = os.environ.get("SLACK_SIGNING_SECRET")
+        if secret:
+            stamp = request.headers.get("x-slack-request-timestamp", "0")
+            if abs(time.time() - int(stamp)) > 300:
+                raise HTTPException(status_code=401, detail="Stale request")
+            expected = "v0=" + hmac.new(secret.encode(), f"v0:{stamp}:".encode() + body, hashlib.sha256).hexdigest()
+            if not hmac.compare_digest(request.headers.get("x-slack-signature", ""), expected):
+                raise HTTPException(status_code=401, detail="Bad signature")
+        payload = await request.json()
+        if payload.get("type") == "url_verification":
+            return {"challenge": payload.get("challenge")}
+        return {"ok": True, "results": ingest_all(parse_slack_event(payload))}
+
+    # ---------------------------------------------------------------- Microsoft Teams
+
+    @app.post("/webhook/teams")
+    async def teams_webhook(request: Request):
+        require_token(request, "TEAMS_WEBHOOK_TOKEN")
+        return {"ok": True, "results": ingest_all(parse_teams_activity(await request.json()))}
+
+    # ---------------------------------------------------------------- Telegram
+
+    @app.post("/webhook/telegram")
+    async def telegram_webhook(request: Request):
+        secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
+        if secret and not hmac.compare_digest(request.headers.get("x-telegram-bot-api-secret-token", ""), secret):
+            raise HTTPException(status_code=401, detail="Bad secret")
+        return {"ok": True, "results": ingest_all(parse_telegram_update(await request.json()))}
 
     # ---------------------------------------------------------------- any other provider
 

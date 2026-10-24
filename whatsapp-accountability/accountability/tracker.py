@@ -32,10 +32,10 @@ class Tracker:
 
         inserted = self.conn.execute(
             """INSERT OR IGNORE INTO messages
-               (msg_id, chat_id, chat_name, sender, text, ts, quoted_msg_id, has_media, reaction_to)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+               (msg_id, chat_id, chat_name, sender, text, ts, quoted_msg_id, has_media, reaction_to, thread_id)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
             (msg.msg_id, msg.chat_id, msg.chat_name, sender, msg.text, iso(msg.timestamp),
-             msg.quoted_msg_id, int(msg.has_media), msg.reaction_to),
+             msg.quoted_msg_id, int(msg.has_media), msg.reaction_to, msg.thread_id),
         ).rowcount
         if not inserted:
             return {"action": "duplicate"}
@@ -116,6 +116,8 @@ class Tracker:
         kind = classify_reply(msg.text, msg.has_media, is_reaction=bool(msg.reaction_to))
         target = msg.reaction_to or msg.quoted_msg_id
         req = self._request_for_message(target) if target else None
+        if req is None and msg.thread_id:
+            req = self._request_in_thread(msg.thread_id, msg.msg_id)
         linked = req is not None
 
         if req is None and kind is not ReplyKind.OTHER:
@@ -226,6 +228,13 @@ class Tracker:
             row = self.conn.execute("SELECT quoted_msg_id FROM messages WHERE msg_id = ?", (msg_id,)).fetchone()
             msg_id = row["quoted_msg_id"] if row else None
         return None
+
+    def _request_in_thread(self, thread_id: str, msg_id: str) -> sqlite3.Row | None:
+        return self.conn.execute(
+            """SELECT r.* FROM requests r JOIN messages m ON m.msg_id = r.msg_id
+               WHERE m.thread_id = ? AND m.msg_id != ? ORDER BY r.created_at LIMIT 1""",
+            (thread_id, msg_id),
+        ).fetchone()
 
     def _latest_open_request_for(self, member: str, chat_id: str, prefer_task: bool) -> sqlite3.Row | None:
         kinds = ("task", "ack") if prefer_task else ("ack", "task")

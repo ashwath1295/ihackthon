@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS messages (
     ts            TEXT NOT NULL,      -- ISO-8601 UTC
     quoted_msg_id TEXT,
     has_media     INTEGER DEFAULT 0,
-    reaction_to   TEXT
+    reaction_to   TEXT,
+    thread_id     TEXT
 );
 
 -- One row per owner message that needs a response.
@@ -78,6 +79,9 @@ def connect(path: str | Path) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(messages)")}
+    if "thread_id" not in cols:  # databases created before thread support
+        conn.execute("ALTER TABLE messages ADD COLUMN thread_id TEXT")
     return conn
 
 

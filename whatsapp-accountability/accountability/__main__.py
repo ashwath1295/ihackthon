@@ -43,6 +43,12 @@ def main(argv: list[str] | None = None) -> int:
     srv.add_argument("--port", type=int, default=8000)
 
     sub.add_parser("sync-sheets", help="push the dashboard tables to Google Sheets now")
+    sub.add_parser("google-chat-login", help="sign in to Google once so the tracker can read your Chat spaces")
+    sub.add_parser("google-chat-poll", help="read new Google Chat messages now")
+
+    con = sub.add_parser("connector", help="run the Claude connector (MCP server) so Claude can read the tracker")
+    con.add_argument("--host", default="0.0.0.0")
+    con.add_argument("--port", type=int, default=8001)
 
     sub.add_parser("demo", help="load the sample 18-person group and print a report")
 
@@ -86,6 +92,24 @@ def main(argv: list[str] | None = None) -> int:
         from .sheets_sync import SheetsSync
 
         print("Updated:", ", ".join(SheetsSync(settings.sheets).push(conn, settings, utcnow())))
+    elif args.cmd in ("google-chat-login", "google-chat-poll"):
+        gc = settings.google_chat or {}
+        if not gc.get("token"):
+            print("Add a [google_chat] section with token and client_secrets to config.toml first (see README).")
+            return 1
+        from .ingest.google_chat_poll import GoogleChatPoller, login
+
+        if args.cmd == "google-chat-login":
+            login(gc["client_secrets"], gc["token"])
+            print(f"Signed in. Token saved to {gc['token']}.")
+        else:
+            tracker = Tracker(conn, settings)
+            results = [tracker.ingest(m) for m in GoogleChatPoller(conn, gc["token"], gc.get("spaces")).poll()]
+            print(f"Read {len(results)} new messages, {sum(r.get('action') == 'request_created' for r in results)} need a response.")
+    elif args.cmd == "connector":
+        from .connector import run_connector
+
+        run_connector(settings, args.host, args.port)
     elif args.cmd == "serve":
         import uvicorn
 

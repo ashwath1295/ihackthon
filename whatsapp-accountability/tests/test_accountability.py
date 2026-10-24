@@ -317,3 +317,79 @@ def test_dashboard_tables_and_sheets_push(env):
     sync = SheetsSync(SheetsConfig("key.json", {"scorecard": "S1", "message_responses": "M1"}), session=session)
     assert sync.push(conn, settings, now) == ["scorecard", "message_responses"]
     assert ("write", "https://sheets.googleapis.com/v4/spreadsheets/S1/values/A1", ["member", "role"]) in session.calls
+
+
+# ------------------------------------------------------------------ other platforms + connector
+
+def test_google_chat_thread_reply_and_email_matching(env):
+    from accountability.ingest.platforms import parse_google_chat_event
+
+    settings, tracker, _, _, conn = env
+    settings.find_member("Juan").email = "juan@example.com"
+    settings.find_member("Bryan").ids.append("gchat:users/222")
+    root = {"type": "MESSAGE", "message": {
+        "name": "spaces/S/messages/1", "createTime": "2026-10-19T13:00:00Z", "text": "Everyone confirm the schedule.",
+        "sender": {"name": "users/111", "email": "juan@example.com", "type": "HUMAN"},
+        "thread": {"name": "spaces/S/threads/T"}, "space": {"name": "spaces/S", "displayName": "Crew"}}}
+    reply = {"chat": {"messagePayload": {"space": {"name": "spaces/S"}, "message": {
+        "name": "spaces/S/messages/2", "createTime": "2026-10-19T13:04:00Z", "text": "got it",
+        "sender": {"name": "users/222", "type": "HUMAN"}, "thread": {"name": "spaces/S/threads/T"}}}}}
+    assert tracker.ingest(parse_google_chat_event(root)[0])["action"] == "request_created"
+    assert tracker.ingest(parse_google_chat_event(reply)[0])["action"] == "reply_recorded"
+    row = conn.execute("SELECT ack_minutes FROM assignments WHERE member='Bryan'").fetchone()
+    assert row["ack_minutes"] == 4.0
+
+
+def test_slack_teams_telegram_parsers():
+    from accountability.ingest.platforms import parse_slack_event, parse_teams_activity, parse_telegram_update
+
+    s = parse_slack_event({"event": {"type": "message", "channel": "C1", "user": "U9", "text": "on it",
+                                     "ts": "1760000100.0001", "thread_ts": "1760000000.0001"}})[0]
+    assert (s.sender, s.quoted_msg_id) == ("slack:U9", "C1:1760000000.0001")
+    r = parse_slack_event({"event": {"type": "reaction_added", "user": "U9", "reaction": "thumbsup",
+                                     "item": {"type": "message", "channel": "C1", "ts": "1760000000.0001"},
+                                     "event_ts": "1760000200.0"}})[0]
+    assert r.reaction_to == "C1:1760000000.0001"
+    assert parse_slack_event({"event": {"type": "message", "bot_id": "B1", "ts": "1", "channel": "C1"}}) == []
+
+    t = parse_teams_activity({"type": "message", "id": "m2", "text": "done", "timestamp": "2026-10-19T13:00:00Z",
+                              "from": {"id": "29:x", "aadObjectId": "aad-1", "name": "Bryan"},
+                              "conversation": {"id": "19:chan@thread.tacv2;messageid=m1"}})[0]
+    assert (t.sender, t.quoted_msg_id) == ("teams:aad-1", "19:chan@thread.tacv2:m1")
+
+    g = parse_telegram_update({"message": {"message_id": 7, "date": 1760000000, "text": "ok",
+                                           "chat": {"id": -100, "title": "Crew"}, "from": {"id": 55},
+                                           "reply_to_message": {"message_id": 6}}})[0]
+    assert (g.sender, g.chat_id, g.quoted_msg_id) == ("telegram:55", "-100", "-100:6")
+
+
+def test_routing_notifier_sends_on_each_persons_platform(env):
+    from accountability.notifier import RoutingNotifier
+
+    settings, *_ = env
+    slack, wa = ConsoleNotifier(), ConsoleNotifier()
+    router = RoutingNotifier({"slack": slack, "whatsapp": wa}, default="whatsapp")
+    bryan, maria = settings.find_member("Bryan"), settings.find_member("Maria")
+    bryan.notify = "slack"
+    router.send_direct(bryan, "hi")
+    router.send_direct(maria, "hi")
+    assert slack.sent == [("Bryan", "hi")] and wa.sent == [("Maria", "hi")]
+
+
+def test_connector_tools(env):
+    import asyncio
+
+    from accountability.connector import build_server
+
+    settings, tracker, enforcer, _, conn = env
+    tracker.ingest(msg("Juan", "Everyone confirm the schedule.", MONDAY_9AM))
+    tracker.ingest(msg("Maria", "got it", MONDAY_9AM + timedelta(minutes=2)))
+    server = build_server(settings, conn)
+
+    async def run():
+        names = {t.name for t in await server.list_tools()}
+        assert {"get_open_messages", "get_scorecard", "get_person", "get_report", "list_team"} <= names
+        return await server.call_tool("get_person", {"name": "maria", "days": 3650})
+
+    result = asyncio.run(run())
+    assert "on_time" in str(result)

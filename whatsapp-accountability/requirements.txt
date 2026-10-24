@@ -5,3 +5,5 @@ anthropic>=2.0   # only needed when use_claude = true
 pytest>=8
 google-auth>=2.29  # only for the live dashboard sheets sync
 requests>=2.31
+google-auth-oauthlib>=1.2  # only for Google Chat sign-in
+mcp>=2.0  # the Claude connector
