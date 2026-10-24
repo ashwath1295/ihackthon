@@ -281,3 +281,39 @@ def test_claude_failure_falls_back_to_rules(env, monkeypatch):
     monkeypatch.setattr(analyzer, "analyze_owner_message_claude", boom)
     a = analyzer.analyze_owner_message(msg("Juan", "Everyone confirm the schedule.", MONDAY_9AM), settings)
     assert a.requires_response
+
+
+def test_dashboard_tables_and_sheets_push(env):
+    from accountability.config import SheetsConfig
+    from accountability.exports import build_tables
+    from accountability.sheets_sync import SheetsSync
+
+    settings, tracker, enforcer, _, conn = env
+    tracker.ingest(msg("Juan", "Everyone confirm the schedule.", MONDAY_9AM))
+    tracker.ingest(msg("Maria", "got it", MONDAY_9AM + timedelta(minutes=2)))
+    now = MONDAY_9AM + timedelta(hours=1)
+    enforcer.tick(now)
+    tables = build_tables(conn, settings, now)
+    row = tables["message_responses"][0]
+    assert (row["expected"], row["on_time"], row["silent"]) == (17, 1, 16)
+    assert row["on_time_names"] == "Maria" and "Frank" in row["silent_names"]
+
+    class FakeResp:
+        status_code = 200
+        text = ""
+
+    class FakeSession:
+        calls = []
+
+        def post(self, url, json):
+            self.calls.append(("clear", url))
+            return FakeResp()
+
+        def put(self, url, params, json):
+            self.calls.append(("write", url, json["values"][0][:2]))
+            return FakeResp()
+
+    session = FakeSession()
+    sync = SheetsSync(SheetsConfig("key.json", {"scorecard": "S1", "message_responses": "M1"}), session=session)
+    assert sync.push(conn, settings, now) == ["scorecard", "message_responses"]
+    assert ("write", "https://sheets.googleapis.com/v4/spreadsheets/S1/values/A1", ["member", "role"]) in session.calls

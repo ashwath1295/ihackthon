@@ -72,6 +72,14 @@ python -m accountability --config config.toml serve --port 8000
 
 Deploy on Render, Railway, Fly.io, or any small VPS, behind HTTPS.
 
+### Live dashboard (Google Sheets)
+The interactive dashboard reads three Google Sheets in the Drive folder **Team Accountability (live data)**: `scorecard`, `open_messages` and `message_responses_v2`. Every time someone opens or refreshes it, it reads the sheets again. The tracker rewrites them every few minutes:
+
+1. In Google Cloud, create a service account, turn on the Google Sheets API, and download its JSON key as `service-account.json`.
+2. Share the three sheets with the service account's email as **Editor**.
+3. Uncomment the `[sheets]` section in `config.toml` (the sheet ids are already filled in).
+4. `serve` now pushes fresh numbers every `sync_minutes`. To push once by hand: `python -m accountability --config config.toml sync-sheets`.
+
 ### Phase 3: Smarter message reading (optional)
 Set `use_claude = true` and `ANTHROPIC_API_KEY`. Claude then reads Juan's messages and works out who owes what, the deadlines, and urgency. If the API is unreachable, the built-in rules take over, so tracking never stops.
 

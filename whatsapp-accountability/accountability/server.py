@@ -24,6 +24,7 @@ from .enforcer import Enforcer
 from .ingest.generic import parse_generic
 from .ingest.whatsapp_cloud import parse_webhook
 from .notifier import Notifier
+from .sheets_sync import SheetsSync
 from .reports import render_markdown, scorecards, unresolved
 from .tracker import Tracker
 
@@ -35,13 +36,19 @@ def create_app(settings: Settings, notifier: Notifier, tick_seconds: int = 60) -
     lock = threading.Lock()
     tracker = Tracker(conn, settings)
     enforcer = Enforcer(conn, settings, notifier)
+    sheets = SheetsSync(settings.sheets) if settings.sheets else None
 
     async def ticker():
+        last_sync = None
         while True:
             try:
                 with lock:
-                    for event in enforcer.tick(utcnow()):
+                    now = utcnow()
+                    for event in enforcer.tick(now):
                         log.info("enforcer: %s", event)
+                    if sheets and (last_sync is None or (now - last_sync).total_seconds() >= settings.sheets.sync_minutes * 60):
+                        last_sync = now
+                        log.info("dashboard sheets updated: %s", sheets.push(conn, settings, now))
             except Exception:
                 log.exception("enforcer tick failed")
             await asyncio.sleep(tick_seconds)

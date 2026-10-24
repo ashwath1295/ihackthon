@@ -42,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     srv.add_argument("--host", default="0.0.0.0")
     srv.add_argument("--port", type=int, default=8000)
 
+    sub.add_parser("sync-sheets", help="push the dashboard tables to Google Sheets now")
+
     sub.add_parser("demo", help="load the sample 18-person group and print a report")
 
     args = parser.parse_args(argv)
@@ -77,6 +79,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.csv:
             Path(args.csv).write_text(render_csv(scorecards(conn, settings, now - timedelta(days=args.days), now)))
             print(f"Wrote {args.csv}")
+    elif args.cmd == "sync-sheets":
+        if not settings.sheets:
+            print("Add a [sheets] section to config.toml first (see README).")
+            return 1
+        from .sheets_sync import SheetsSync
+
+        print("Updated:", ", ".join(SheetsSync(settings.sheets).push(conn, settings, utcnow())))
     elif args.cmd == "serve":
         import uvicorn
 

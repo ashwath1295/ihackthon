@@ -6,6 +6,15 @@ db_path = "accountability.db"
 use_claude = false              # true = Claude reads your messages (needs ANTHROPIC_API_KEY)
 claude_model = "claude-opus-5-5"
 
+# Live dashboard: the tracker writes these Google Sheets every few minutes.
+# Uncomment after sharing each sheet with your service account (see README).
+# [sheets]
+# credentials = "service-account.json"
+# scorecard = "1Qhb4thJXjiJRq6jAYHGtJ25lRfyI6y3PPQusNMe2RFQ"
+# open_messages = "1j7DPZphS3wd8chpRQNBfI1haZuv6kQqV6J-HJTwsRgU"
+# message_responses = "1zzv4FFBW89PN_Ww6ni8lutQYj98682t76W1sn2ACVgE"
+# sync_minutes = 5
+
 [policy]
 ack_minutes = 15                # must acknowledge within 15 work minutes
 reminder_minutes = 30           # personal reminder at 30

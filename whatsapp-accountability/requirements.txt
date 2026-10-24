@@ -3,3 +3,5 @@ uvicorn>=0.29
 pydantic>=2.6
 anthropic>=2.0   # only needed when use_claude = true
 pytest>=8
+google-auth>=2.29  # only for the live dashboard sheets sync
+requests>=2.31

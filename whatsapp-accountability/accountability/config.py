@@ -47,12 +47,22 @@ class Policy:
 
 
 @dataclass
+class SheetsConfig:
+    """Google Sheets the live dashboard reads (see sheets_sync.py)."""
+
+    credentials: str  # path to the service account JSON key
+    sheet_ids: dict[str, str]  # table name -> spreadsheet id
+    sync_minutes: int = 5
+
+
+@dataclass
 class Settings:
     policy: Policy
     members: list[Member]
     db_path: str = "accountability.db"
     use_claude: bool = False
     claude_model: str = "claude-opus-5-5"
+    sheets: SheetsConfig | None = None
 
     @property
     def owner(self) -> Member:
@@ -110,5 +120,11 @@ def load_settings(path: str | Path) -> Settings:
         use_claude=app.get("use_claude", False),
         claude_model=app.get("claude_model", "claude-opus-5-5"),
     )
+    if sh := data.get("sheets"):
+        settings.sheets = SheetsConfig(
+            credentials=sh["credentials"],
+            sheet_ids={k: sh[k] for k in ("scorecard", "open_messages", "message_responses") if sh.get(k)},
+            sync_minutes=sh.get("sync_minutes", 5),
+        )
     settings.owner  # fail fast if no owner is configured
     return settings
