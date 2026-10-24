@@ -1,0 +1,134 @@
+# Copy to config.toml and replace the names and numbers with your team.
+# Phone numbers: country code + number, digits only (e.g. 15551234567).
+
+[app]
+db_path = "accountability.db"
+use_claude = false              # true = Claude reads your messages (needs ANTHROPIC_API_KEY)
+claude_model = "claude-opus-5-5"
+
+[policy]
+ack_minutes = 15                # must acknowledge within 15 work minutes
+reminder_minutes = 30           # personal reminder at 30
+escalate_minutes = 60           # final notice + escalate to manager and Juan at 60
+urgent_ack_minutes = 5          # messages with "urgent", "ASAP", 🚨 use these, 24/7
+urgent_reminder_minutes = 10
+urgent_escalate_minutes = 20
+failure_threshold = 3           # 3 missed acknowledgments...
+failure_window_days = 30        # ...in 30 days = flagged for review
+timezone = "America/New_York"
+work_start = "08:00"
+work_end = "18:00"
+work_days = [0, 1, 2, 3, 4, 5]  # Mon-Sat
+group_no_response_alert = true  # alert Juan when NOBODY answers
+
+# ---- the owner: messages from this person create instructions
+[[members]]
+name = "Juan"
+phone = "15550000001"
+role = "Owner"
+is_owner = true
+
+# ---- managers (receive escalations for their people)
+[[members]]
+name = "Bryan"
+phone = "15550000002"
+role = "Operations Manager"
+manager = "Juan"
+
+[[members]]
+name = "Maria"
+phone = "15550000003"
+role = "Acquisitions Manager"
+manager = "Juan"
+
+# ---- team
+[[members]]
+name = "Carlos"
+phone = "15550000004"
+role = "Project Manager"
+manager = "Bryan"
+
+[[members]]
+name = "Diego"
+phone = "15550000005"
+role = "Site Supervisor"
+manager = "Bryan"
+
+[[members]]
+name = "Elena"
+phone = "15550000006"
+role = "Acquisitions"
+manager = "Maria"
+
+[[members]]
+name = "Frank"
+phone = "15550000007"
+role = "Contractor"
+manager = "Bryan"
+
+[[members]]
+name = "Grace"
+phone = "15550000008"
+role = "Transaction Coordinator"
+manager = "Maria"
+
+[[members]]
+name = "Hector"
+phone = "15550000009"
+role = "Contractor"
+manager = "Bryan"
+
+[[members]]
+name = "Isabel"
+phone = "15550000010"
+role = "Bookkeeper"
+manager = "Juan"
+
+[[members]]
+name = "Jorge"
+phone = "15550000011"
+role = "Contractor"
+manager = "Bryan"
+
+[[members]]
+name = "Kevin"
+phone = "15550000012"
+role = "Dispositions"
+manager = "Maria"
+
+[[members]]
+name = "Luis"
+phone = "15550000013"
+role = "Painter"
+manager = "Carlos"
+
+[[members]]
+name = "Monica"
+phone = "15550000014"
+role = "Lead Manager"
+manager = "Maria"
+
+[[members]]
+name = "Nate"
+phone = "15550000015"
+role = "Cold Caller"
+manager = "Monica"
+
+[[members]]
+name = "Oscar"
+phone = "15550000016"
+role = "Electrician"
+manager = "Carlos"
+
+[[members]]
+name = "Paula"
+phone = "15550000017"
+role = "Virtual Assistant"
+manager = "Monica"
+
+[[members]]
+name = "Ricky"
+phone = "15550000018"
+role = "Plumber"
+manager = "Carlos"
+aliases = ["Ricardo", "Rick"]
